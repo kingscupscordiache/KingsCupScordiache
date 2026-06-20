@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#0b1264">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Kings Cup Scordiache</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    :root { --dark-blue: #0b1264; --gold: #c5a059; --white: #ffffff; }
+    body { background-color: var(--dark-blue); color: white; margin: 0; padding-bottom: 80px; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
+    [data-admin-only] { display: none; }
+    #splash { position: fixed; inset: 0; background-color: var(--dark-blue); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .logo-main { width: 250px; animation: pulse 2s infinite; }
+    .section-logo { width: 120px; display: block; margin: 0 auto 15px auto; }
+    .btn-enter { background: var(--gold); color: white; border: none; padding: 15px 35px; border-radius: 50px; font-weight: bold; margin-top: 20px; transition: 0.3s; cursor: pointer; }
+    .link-admin-access { display: block; margin-top: 16px; font-size: 0.7rem; color: rgba(255,255,255,0.35); cursor: pointer; text-decoration: underline; letter-spacing: 0.3px; }
+    .link-admin-access:hover { color: rgba(255,255,255,0.6); }
+    .admin-login-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .admin-login-box { background: var(--dark-blue); border: 1px solid var(--gold); border-radius: 16px; padding: 24px; width: 100%; max-width: 320px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+    .admin-login-box h5 { color: var(--gold); margin-bottom: 16px; font-size: 1rem; }
+    .admin-login-error { background: rgba(220,38,38,0.2); border: 1px solid rgba(220,38,38,0.5); color: #f87171; font-size: 0.78rem; padding: 8px 10px; border-radius: 8px; margin-bottom: 10px; }
+    .btn-admin-cancel { background: transparent; color: rgba(255,255,255,0.5); border: none; width: 100%; padding: 8px; margin-top: 8px; font-size: 0.8rem; cursor: pointer; }
+    .btn-admin-cancel:hover { color: white; }
+    
+    .sponsor-strip { background: white; overflow: hidden; height: 60px; display: flex; align-items: center; border-bottom: 2px solid var(--gold); position: sticky; top: 0; z-index: 900; }
+    .marquee-track { display: flex; width: max-content; will-change: transform; backface-visibility: hidden; transform: translateZ(0); animation: scroll 22s linear infinite; }
+    .marquee-track.paused { animation-play-state: paused; }
+    .marquee-group { display: flex; align-items: center; flex-shrink: 0; }
+    .marquee a { display: flex; align-items: center; height: 45px; margin: 0 30px; flex-shrink: 0; }
+    .marquee img { height: 100%; width: auto; object-fit: contain; -webkit-user-drag: none; }
+
+    .bottom-nav { position: fixed; bottom: 0; width: 100%; background: rgba(255,255,255,0.1); backdrop-filter: blur(15px); display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.1); z-index: 1000; }
+    .nav-item { color: rgba(255,255,255,0.6); text-align: center; font-size: 0.75rem; cursor: pointer; text-decoration: none; flex: 1; }
+    .nav-item i { font-size: 1.3rem; display: block; }
+    .active-nav { color: var(--gold) !important; }
+    .section { display: none; padding: 20px; animation: fadeIn 0.4s; }
+    .admin-card { background: rgba(255,255,255,0.05); border: 1px solid var(--gold); border-radius: 15px; padding: 15px; margin-bottom: 20px; }
+    input, select { background: white !important; color: black !important; margin-bottom: 12px !important; border-radius: 10px !important; }
+    .match-card { background: linear-gradient(135deg, rgba(255,255,255,0.09), rgba(255,255,255,0.04)); border-radius: 16px; padding: 16px; margin-bottom: 14px; border: 1px solid rgba(197,160,89,0.35); position: relative; overflow: hidden; }
+    .match-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--gold); }
+    .match-card.is-result::before { background: #2e9e4f; }
+    .match-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .match-time { font-size: 0.7rem; color: #ddd; display: flex; align-items: center; gap: 6px; }
+    .match-time i { color: var(--gold); }
+    .match-badge { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; padding: 3px 10px; border-radius: 20px; background: rgba(197,160,89,0.2); color: var(--gold); border: 1px solid rgba(197,160,89,0.4); }
+    .match-badge.result { background: rgba(46,158,79,0.2); color: #5fd97f; border-color: rgba(95,217,127,0.4); }
+    .match-teams { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .match-team { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 0; gap: 6px; }
+    .match-team-logo { width: 42px; height: 42px; object-fit: contain; border-radius: 8px; background: rgba(255,255,255,0.08); padding: 4px; }
+    .match-team-name { font-size: 0.78rem; font-weight: 600; text-align: center; line-height: 1.15; word-break: break-word; }
+    .match-center { display: flex; flex-direction: column; align-items: center; min-width: 56px; }
+    .match-vs { font-size: 0.7rem; color: rgba(255,255,255,0.4); font-weight: 700; }
+    .match-score { font-size: 1.4rem; font-weight: 800; color: var(--gold); letter-spacing: 1px; }
+    .match-extra { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 0.72rem; color: #ccc; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .empty-state { text-align: center; padding: 40px 20px; color: rgba(255,255,255,0.5); }
+    .empty-state i { font-size: 2rem; color: var(--gold); display: block; margin-bottom: 10px; opacity: 0.6; }
+    .marcatore-tag { background: var(--gold); color: white; padding: 2px 8px; border-radius: 5px; margin-right: 5px; display: inline-block; font-size: 0.8rem; margin-bottom: 5px; }
+    .sub-nav { display: flex; justify-content: center; margin-bottom: 20px; border: 1px solid var(--gold); border-radius: 10px; overflow: hidden; }
+    .sub-item { flex: 1; padding: 10px; text-align: center; cursor: pointer; transition: 0.3s; font-size: 0.75rem; }
+    .sub-item.active { background: var(--gold); color: white; }
+    
+    .bracket-container { padding: 10px 0 24px; overflow-x: auto; }
+    .bracket-grid { display: grid; grid-template-columns: 175px 175px 195px 175px 175px; align-items: center; column-gap: 26px; min-width: 940px; width: max-content; margin: 0 auto; }
+    .bracket-round-label { font-size: 0.62rem; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; text-align: center; margin-bottom: 10px; opacity: 0.85; font-weight: 700; }
+    .bracket-col { display: flex; flex-direction: column; height: 100%; }
+    .bracket-col-inner { display: flex; flex-direction: column; justify-content: space-around; flex: 1; gap: 18px; position: relative; }
+    .bracket-col-inner.col-quarti { justify-content: space-around; }
+    .bracket-col-inner.col-semi { justify-content: space-around; }
+    .bracket-col-inner.col-finale { justify-content: center; align-items: center; height: 100%; }
+
+    .bg-match { background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.04)); border: 1px solid rgba(197,160,89,0.4); border-radius: 10px; padding: 9px 11px; font-size: 0.72rem; width: 100%; position: relative; box-shadow: 0 2px 8px rgba(0,0,0,0.25); }
+    .bg-match.tbd { opacity: 0.4; border-style: dashed; }
+    .bg-time { font-size: 0.58rem; color: #bbb; margin-bottom: 4px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bg-row { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; gap: 6px; }
+    .bg-row .team-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .bg-row .score { font-weight: 800; color: var(--gold); min-width: 16px; text-align: right; }
+    .bg-row.winner .team-name { color: #5fd97f; font-weight: 700; }
+    .bg-row.winner .score { color: #5fd97f; }
+
+    /* Connettori orizzontali: ogni match manda una linea verso la colonna successiva */
+    .bracket-col-inner.col-quarti .bg-match::after,
+    .bracket-col-inner.col-semi .bg-match::after {
+      content:''; position:absolute; top:50%; width:13px; height:1px; background: rgba(197,160,89,0.55);
+    }
+    .bracket-col:nth-child(1) .bg-match::after, .bracket-col:nth-child(2) .bg-match::after { right:-13px; }
+    .bracket-col:nth-child(4) .bg-match::after, .bracket-col:nth-child(5) .bg-match::after { left:auto; right:auto; }
+
+    /* Colonne 1 e 2 (sinistra->centro): linea esce a destra */
+    .bracket-col:nth-child(1) .bg-match::after, .bracket-col:nth-child(2) .bg-match::after { left: auto; right: -13px; }
+    /* Colonne 4 e 5 (destra->centro): linea esce a sinistra */
+    .bracket-col:nth-child(4) .bg-match::before, .bracket-col:nth-child(5) .bg-match::before {
+      content:''; position:absolute; top:50%; left:-13px; width:13px; height:1px; background: rgba(197,160,89,0.55);
+    }
+    .bracket-col:nth-child(4) .bg-match::after, .bracket-col:nth-child(5) .bg-match::after { content: none; }
+
+    /* Staffe verticali che uniscono coppie di match verso il round successivo */
+    .bracket-col-inner.col-quarti { position: relative; }
+    .bracket-col:nth-child(1) .col-quarti::before, .bracket-col:nth-child(5) .col-quarti::before {
+      content:''; position:absolute; top:25%; bottom:25%; width:1px; background: rgba(197,160,89,0.55);
+    }
+    .bracket-col:nth-child(1) .col-quarti::before { right: -13px; }
+    .bracket-col:nth-child(5) .col-quarti::before { left: -13px; }
+
+    .bg-match.final { border: 1px solid var(--gold); box-shadow: 0 0 18px rgba(197,160,89,0.35); padding: 12px 14px; }
+    .bg-match.final .bg-time { color: var(--gold); font-weight: 700; font-size: 0.62rem; }
+    .bg-match.final .bg-row { font-size: 0.85rem; padding: 5px 0; }
+    .trophy-icon { font-size: 1.7rem; color: var(--gold); margin-bottom: 8px; text-shadow: 0 0 14px rgba(197,160,89,0.6); display: block; text-align: center; }
+
+    @media (max-width: 480px) {
+      .bracket-grid { grid-template-columns: 130px 130px 150px 130px 130px; column-gap: 16px; min-width: 700px; }
+      .bg-match { font-size: 0.62rem; padding: 7px 8px; }
+    }
+
+    .player-row { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .player-photo { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold); margin-right: 15px; }
+    .player-info { flex-grow: 1; }
+    .player-score { font-size: 0.85rem; font-weight: bold; text-align: right; }
+    .table-girone { margin-bottom: 26px; background: linear-gradient(165deg, rgba(13,148,136,0.16), rgba(11,18,100,0.6)); border-radius: 18px; padding: 0; border: 1px solid rgba(45,212,191,0.45); box-shadow: 0 6px 22px rgba(0,0,0,0.28); overflow: hidden; }
+    .girone-header { background: linear-gradient(100deg, #0d9488, #115e59); padding: 14px 18px; display: flex; align-items: center; gap: 10px; }
+    .girone-header i { font-size: 1.1rem; color: #5eead4; }
+    .girone-header h4 { margin: 0; font-size: 1rem; font-weight: 800; letter-spacing: 0.3px; color: white; }
+    .girone-body { padding: 14px 14px 16px; }
+    .title-girone { display: none; }
+    .fixed-table { table-layout: fixed; width: 100%; border-collapse: separate; border-spacing: 0 6px; --bs-table-bg: transparent; --bs-table-color: #fff; }
+    .fixed-table thead th { font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.6px; color: rgba(255,255,255,0.55) !important; font-weight: 700; border-bottom: none !important; padding-bottom: 4px !important; background: transparent !important; }
+    .fixed-table tbody tr { background: rgba(255,255,255,0.045); transition: background 0.15s; }
+    .fixed-table tbody tr:hover { background: rgba(94,234,212,0.1); }
+    .fixed-table th, .fixed-table td { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; vertical-align: middle; padding: 11px 4px !important; text-align: center; color: #ffffff !important; background-color: transparent !important; }
+    .fixed-table tbody tr td:first-child { border-radius: 10px 0 0 10px; padding-left: 8px !important; }
+    .fixed-table tbody tr td:last-child { border-radius: 0 10px 10px 0; }
+    .fixed-table .col-team { font-weight: 600; color: #ffffff !important; }
+    .col-rank { width: 35px; }
+    .col-team { width: auto; text-align: left !important; }
+    .col-pts { width: 45px; font-weight: bold; }
+    .col-stats { width: 30px; }
+    .pos-rank { color: white; border-radius: 50%; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; }
+    .pos-r1 { background: linear-gradient(135deg, #34d399, #059669) !important; box-shadow: 0 2px 6px rgba(5,150,105,0.5); }
+    .pos-r2 { background: linear-gradient(135deg, #60a5fa, #2563eb) !important; box-shadow: 0 2px 6px rgba(37,99,235,0.5); }
+    .pos-r3 { background: linear-gradient(135deg, #fbbf24, #d97706) !important; box-shadow: 0 2px 6px rgba(217,119,6,0.5); }
+    .pos-r4 { background: linear-gradient(135deg, #f87171, #dc2626) !important; box-shadow: 0 2px 6px rgba(220,38,38,0.5); }
+    .row-qualified td:first-child { box-shadow: inset 3px 0 0 #5eead4; }
+    .btn-team-tab { background: rgba(255,255,255,0.1); color: white; border: 1px solid var(--gold); padding: 12px; margin-bottom: 5px; border-radius: 10px; width: 100%; text-align: left; font-weight: bold; display: flex; align-items: center; justify-content: space-between; }
+    .team-logo-mini { width: 25px; height: 25px; object-fit: contain; margin-right: 8px; border-radius: 4px; }
+    .team-details { background: rgba(255,255,255,0.05); border-radius: 0 0 10px 10px; padding: 10px; margin-bottom: 15px; border: 1px solid rgba(197, 160, 89, 0.3); border-top: none; display: none; }
+    .player-list-item { font-size: 0.9rem; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; }
+    .role-tag { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: var(--gold); color: white; }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes scroll { 0% { transform: translate3d(0,0,0); } 100% { transform: translate3d(-50%,0,0); } }
+  </style>
+</head>
+<body>
+
+  <div id="splash">
+    <img src="https://i.imgur.com/FFWT0TZ.png" class="logo-main">
+    <button class="btn-enter" onclick="avviaApp()">ENTRA IN MONDO KINGSCUP</button>
+    <span class="link-admin-access" onclick="apriLoginAdmin()">Accesso Admin</span>
+  </div>
+
+  <div id="adminLoginOverlay" class="admin-login-overlay" style="display:none;">
+    <div class="admin-login-box">
+      <h5><i class="fas fa-user-shield"></i> Accesso Admin</h5>
+      <input type="email" id="adminEmailInput" class="form-control" placeholder="Email">
+      <input type="password" id="adminPasswordInput" class="form-control" placeholder="Password">
+      <div id="adminLoginError" class="admin-login-error" style="display:none;"></div>
+      <button class="btn-enter w-100" onclick="eseguiLoginAdmin()">Accedi</button>
+      <button class="btn-admin-cancel" onclick="chiudiLoginAdmin()">Annulla</button>
+    </div>
+  </div>
+
+  <div class="sponsor-strip" id="sponsorStrip" style="display:none;">
+    <div class="marquee-track" id="marqueeContent"></div>
+  </div>
+
+  <div id="main-content" style="display:none;" class="container pt-3">
+    <div id="calendario" class="section" style="display:block;">
+      <img src="https://i.imgur.com/FFWT0TZ.png" class="section-logo">
+      <div class="sub-nav">
+        <div class="sub-item active" onclick="switchTabCalendario('gare-oggi-view', this)">Gare Oggi</div>
+        <div class="sub-item" onclick="switchTabCalendario('gare-view', this)">Prossime Gare</div>
+        <div class="sub-item" onclick="switchTabCalendario('risultati-view', this)">Risultati</div>
+      </div>
+      <div id="gare-oggi-view"><div id="listaCalendarioOggi"></div></div>
+      <div id="gare-view" style="display:none;"><div id="listaCalendario"></div></div>
+      <div id="risultati-view" style="display:none;"><div id="listaRisultati"></div></div>
+    </div>
+
+    <div id="squadre" class="section">
+      <img src="https://i.imgur.com/FFWT0TZ.png" class="section-logo">
+      <h3>👥 Squadre & Distinte</h3>
+      <div id="areaSquadreDistinte"></div>
+    </div>
+
+    <div id="classifiche" class="section">
+      <img src="https://i.imgur.com/FFWT0TZ.png" class="section-logo">
+      <div class="sub-nav">
+        <div class="sub-item active" onclick="switchTab('gironi-view', this)">Gironi</div>
+        <div class="sub-item" onclick="switchTab('playoff-view', this)">Fasi Finali</div>
+      </div>
+      <div id="gironi-view"><div id="areaClassifiche"></div></div>
+      <div id="playoff-view" style="display:none;">
+        <h4 class="text-center mb-4">🏆 Tabellone Playoff</h4>
+        <div id="bracketContent"></div>
+      </div>
+    </div>
+
+    <div id="marcatori" class="section">
+      <img src="https://i.imgur.com/FFWT0TZ.png" class="section-logo">
+      <div class="sub-nav">
+        <div class="sub-item active" onclick="switchTabMarcatori('marcatori-view', this)">Marcatori</div>
+        <div class="sub-item" onclick="switchTabMarcatori('mvp-view', this)">MVP</div>
+        <div class="sub-item" onclick="switchTabMarcatori('presidenti-view', this)">Presidenti</div>
+      </div>
+      <div id="marcatori-view"><div id="areaMarcatori"></div></div>
+      <div id="mvp-view" style="display:none;"><div id="areaMVP"></div></div>
+      <div id="presidenti-view" style="display:none;"><div id="areaPresidenti"></div></div>
+    </div>
+
+    <div id="admin" class="section" data-admin-only="1">
+      <h3 class="text-warning mb-4"><i class="fas fa-user-shield"></i> Pannello Master</h3>
+      <div class="admin-card">
+        <h4>0. Sponsor</h4>
+        <input type="text" id="logoSponsor" class="form-control" placeholder="URL Logo Sponsor">
+        <input type="text" id="linkSponsor" class="form-control" placeholder="URL Sito Sponsor">
+        <button class="btn btn-warning w-100" onclick="salvaSponsor()">Aggiungi Sponsor</button>
+      </div>
+      <div class="admin-card">
+        <h4>1. Squadre</h4>
+        <input type="hidden" id="edit_row_Squadre">
+        <input type="text" id="nomeSquadra" class="form-control" placeholder="Nome Squadra">
+        <input type="text" id="logoSquadra" class="form-control" placeholder="URL Logo">
+        <select id="selectGirone" class="form-select"></select>
+        <button class="btn btn-warning w-100" onclick="salvaSquadra()">Salva Squadra</button>
+      </div>
+      <div class="admin-card">
+        <h4>2. Giocatori e Staff</h4>
+        <input type="hidden" id="edit_row_Giocatori">
+        <input type="text" id="nomeGiocatore" class="form-control" placeholder="Nome">
+        <input type="text" id="fotoGiocatore" class="form-control" placeholder="URL Foto">
+        <select id="selectSquadra" class="form-select"></select>
+        <select id="ruoloSoggetto" class="form-select">
+          <option value="Giocatore">Giocatore</option>
+          <option value="Presidente">Presidente</option>
+          <option value="Allenatore">Allenatore</option>
+        </select>
+        <button class="btn btn-warning w-100" onclick="salvaGiocatore()">Salva Dati</button>
+      </div>
+      <div class="admin-card">
+        <h4>3. Programma Match</h4>
+        <input type="hidden" id="edit_row_Programmazione">
+        <input type="text" id="dataOraPartita" class="form-control" placeholder="Es: 15 Aprile ore 21:00">
+        <select id="tipoMatch" class="form-select">
+          <option value="Girone">Girone</option>
+          <option value="Quarti">Quarti</option>
+          <option value="Semi">Semi</option>
+          <option value="Finale">Finale 1-2</option>
+        </select>
+        <select id="progSqA" class="form-select"></select>
+        <select id="progSqB" class="form-select"></select>
+        <button class="btn btn-warning w-100" onclick="salvaProgramma()">Salva Programma</button>
+      </div>
+      <div class="admin-card">
+        <h4>4. Registra Risultato</h4>
+        <input type="hidden" id="edit_row_Risultati">
+        <select id="selectPartitaProgrammata" class="form-select" onchange="resetMarcatori()"></select>
+        <div class="d-flex mb-2">
+          <input type="number" id="goalA" class="form-control mx-1" value="0">
+          <input type="number" id="goalB" class="form-control mx-1" value="0">
+        </div>
+        <select id="selectMarcatore" class="form-select"></select>
+        <button class="btn btn-outline-warning w-100 mb-2" onclick="aggiungiMarcatore('G')">Goal +</button>
+        <select id="selectPresidente" class="form-select"></select>
+        <button class="btn btn-outline-info w-100 mb-2" onclick="aggiungiMarcatore('P')">Goal Pres. +</button>
+        <div id="marcatoriList" class="mb-2"></div>
+        <select id="selectMVP" class="form-select"></select>
+        <button class="btn btn-warning w-100" onclick="salvaRisultatoFinale()">Salva Risultato</button>
+      </div>
+      <div class="admin-card">
+        <h4>5. Modifica / Elimina</h4>
+        <select id="deleteSheet" class="form-select" onchange="caricaDatiElimina()">
+          <option value="">Seleziona foglio...</option>
+          <option value="Sponsor">Sponsor</option>
+          <option value="Squadre">Squadre</option>
+          <option value="Giocatori">Giocatori</option>
+          <option value="Programmazione">Calendario</option>
+          <option value="Risultati">Risultati</option>
+        </select>
+        <div id="deleteList" class="mt-2"></div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav" id="navBar" style="display:none;">
+    <div class="nav-item active-nav" onclick="mostra('calendario', this)"><i class="fas fa-calendar"></i><br>Gare</div>
+    <div class="nav-item" onclick="mostra('squadre', this)"><i class="fas fa-users"></i><br>Squadre</div>
+    <div class="nav-item" onclick="mostra('classifiche', this)"><i class="fas fa-list-ol"></i><br>Gironi</div>
+    <div class="nav-item" onclick="mostra('marcatori', this)"><i class="fas fa-medal"></i><br>Marcatori</div>
+    <div class="nav-item" id="navAdminItem" data-admin-only="1" onclick="mostra('admin', this)"><i class="fas fa-cog"></i><br>Admin</div>
+  </nav>
+
+  <script>
+    // ============================================================
+    // CONFIGURAZIONE BACKEND
+    // Sostituisci con l'URL della tua Web App Apps Script (Distribuisci > Nuova distribuzione > Web App)
+    // ============================================================
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxZUUt4gbs37eVUPx6ebSm8RDHNsldoZSX8HH9nqPCsEO4DOaGXqVS5pkla_1PqSOw8hQ/exec";
+
+    let appData = { prog: [], ris: [], sq: [], gio: [], spo: [] };
+    let marcatoriPartita = [];
+    let presidentiPartita = [];
+    let isAdmin = false;
+    let adminToken = null;
+
+    // --- Helper centralizzati per parlare col backend Apps Script via fetch() ---
+    // GET per sole letture pubbliche (nessun dato sensibile, nessun token richiesto)
+    async function apiGet(action, params) {
+      let url = BACKEND_URL + "?action=" + encodeURIComponent(action);
+      if(params) for(let k in params) url += "&" + k + "=" + encodeURIComponent(params[k]);
+      let res = await fetch(url);
+      return res.json();
+    }
+    // POST per login e per ogni azione che scrive dati (richiede adminToken lato server)
+    async function apiPost(payload) {
+      let res = await fetch(BACKEND_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" }, // text/plain evita preflight CORS su Apps Script
+        body: JSON.stringify(payload)
+      });
+      return res.json();
+    }
+
+    function avviaApp() {
+      document.getElementById('splash').style.display = 'none';
+      document.getElementById('main-content').style.display = 'block';
+      document.getElementById('navBar').style.display = 'flex';
+      document.getElementById('sponsorStrip').style.display = 'flex';
+      aggiornaTutto();
+      caricaDatiPubblici();
+    }
+
+    // --- Login Admin ---
+    function apriLoginAdmin() {
+      document.getElementById('adminLoginOverlay').style.display = 'flex';
+      document.getElementById('adminLoginError').style.display = 'none';
+    }
+    function chiudiLoginAdmin() {
+      document.getElementById('adminLoginOverlay').style.display = 'none';
+    }
+    async function eseguiLoginAdmin() {
+      let email = document.getElementById('adminEmailInput').value.trim();
+      let password = document.getElementById('adminPasswordInput').value;
+      let errBox = document.getElementById('adminLoginError');
+      if(!email || !password) { errBox.textContent = "Inserisci email e password."; errBox.style.display = 'block'; return; }
+      try {
+        let res = await apiPost({ action: "login", email: email, password: password });
+        if(res.ok) {
+          isAdmin = true;
+          adminToken = res.token;
+          document.querySelectorAll('[data-admin-only]').forEach(el => { el.style.display = (el.id === 'navAdminItem') ? 'block' : ''; });
+          chiudiLoginAdmin();
+          avviaApp();
+        } else {
+          errBox.textContent = res.error || "Accesso negato.";
+          errBox.style.display = 'block';
+        }
+      } catch(err) {
+        errBox.textContent = "Errore di connessione al server.";
+        errBox.style.display = 'block';
+      }
+    }
+
+    function mostra(id, el) {
+      document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
+      document.getElementById(id).style.display = 'block';
+      if(el) el.classList.add('active-nav');
+    }
+
+    function toggleTeam(id) {
+      let el = document.getElementById(id);
+      el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+    }
+
+    function switchTab(viewId, el) {
+      document.getElementById('gironi-view').style.display = 'none';
+      document.getElementById('playoff-view').style.display = 'none';
+      document.querySelectorAll('#classifiche .sub-item').forEach(i => i.classList.remove('active'));
+      document.getElementById(viewId).style.display = 'block';
+      el.classList.add('active');
+    }
+
+    function switchTabMarcatori(viewId, el) {
+      document.getElementById('marcatori-view').style.display = 'none';
+      document.getElementById('mvp-view').style.display = 'none';
+      document.getElementById('presidenti-view').style.display = 'none';
+      document.querySelectorAll('#marcatori .sub-item').forEach(i => i.classList.remove('active'));
+      document.getElementById(viewId).style.display = 'block';
+      el.classList.add('active');
+    }
+
+    function switchTabCalendario(viewId, el) {
+      document.getElementById('gare-view').style.display = 'none';
+      document.getElementById('risultati-view').style.display = 'none';
+      document.getElementById('gare-oggi-view').style.display = 'none';
+      document.querySelectorAll('#calendario .sub-item').forEach(i => i.classList.remove('active'));
+      document.getElementById(viewId).style.display = 'block';
+      el.classList.add('active');
+    }
+
+    async function caricaDatiPubblici() {
+      const fogli = [
+        { key: 'prog', sheet: 'Programmazione' },
+        { key: 'ris', sheet: 'Risultati' },
+        { key: 'sq', sheet: 'Squadre' },
+        { key: 'gio', sheet: 'Giocatori' },
+        { key: 'spo', sheet: 'Sponsor' }
+      ];
+      // Carichiamo tutti i fogli in parallelo, ma eseguiamo il render una sola volta a fine caricamento
+      // (prima ogni risposta richiamava eseguiRender singolarmente, causando il riavvio ripetuto
+      // dell'animazione sponsor); ora il render parte solo dopo che tutti i dati sono pronti.
+      await Promise.all(fogli.map(async f => {
+        try {
+          let res = await apiGet("getData", { sheet: f.sheet });
+          appData[f.key] = (res.ok ? res.data : []) || [];
+        } catch(err) {
+          appData[f.key] = [];
+        }
+      }));
+      eseguiRender();
+    }
+
+    function eseguiRender() {
+      renderSponsor();
+      renderCalendario();
+      renderTabellone();
+      renderClassifiche();
+      renderSquadre();
+      renderMarcatori();
+    }
+
+    let ultimoHashSponsor = null;
+
+    function renderSponsor() {
+      if(appData.spo && appData.spo.length > 1) {
+        let sponsors = appData.spo.slice(1).filter(s => s[0]);
+        // Evitiamo di ricostruire e riavviare l'animazione se i dati sponsor non sono cambiati:
+        // caricaDatiPubblici fa 5 chiamate parallele e ognuna richiama eseguiRender(), quindi
+        // senza questo controllo il marquee veniva ricreato (e lo scroll riavviato) fino a 5 volte di fila.
+        let hash = sponsors.map(s => s[0] + '|' + s[1]).join('::');
+        if(hash === ultimoHashSponsor) return;
+        ultimoHashSponsor = hash;
+
+        // Se pochi sponsor, replichiamo la lista base finché non riempie bene la fascia (evita buchi/scatti nel loop)
+        let base = [...sponsors];
+        while(base.length > 0 && base.length < 6) base = base.concat(sponsors);
+        let group = `<div class="marquee-group marquee">` + base.map(s => `<a href="${s[1]}" target="_blank" rel="noopener"><img src="${s[0]}" loading="eager"></a>`).join('') + `</div>`;
+        let track = document.getElementById('marqueeContent');
+        // Esattamente 2 copie identiche: il keyframe trasla del 50%, quindi il loop è perfettamente continuo
+        track.innerHTML = group + group;
+        track.classList.add('paused');
+
+        // Aspettiamo che TUTTE le immagini siano caricate (decode incluso) prima di avviare lo scroll:
+        // se un logo arriva a metà animazione, il layout si ridisegna e si vede il "tick".
+        let imgs = Array.from(track.querySelectorAll('img'));
+        let loaders = imgs.map(img => {
+          if(img.complete && img.naturalWidth > 0) return img.decode ? img.decode().catch(()=>{}) : Promise.resolve();
+          return new Promise(resolve => {
+            img.addEventListener('load', resolve, { once: true });
+            img.addEventListener('error', resolve, { once: true });
+          });
+        });
+
+        Promise.all(loaders).then(() => {
+          // Velocità costante in px/sec, così la durata si adatta al numero di sponsor (niente più scroll troppo rapido/scattoso con pochi loghi)
+          requestAnimationFrame(() => {
+            let halfWidth = track.scrollWidth / 2;
+            let pxPerSecond = 55;
+            let duration = Math.max(12, halfWidth / pxPerSecond);
+            track.style.animationDuration = duration + 's';
+            track.classList.remove('paused');
+          });
+        });
+      }
+    }
+
+    function renderCalendario() {
+      let hCal = ""; let hRis = ""; let hOggi = "";
+      let oggi = new Date();
+      let oggiStr = oggi.toLocaleDateString('it-IT', { day: 'numeric', month: 'long' }).toLowerCase();
+
+      let logoMap = {};
+      if(appData.sq) appData.sq.forEach((s,i) => { if(i>0) logoMap[s[0]] = s[1]; });
+
+      function logoFor(nome) {
+        return logoMap[nome] || 'https://via.placeholder.com/60/0b1264/c5a059?text=' + encodeURIComponent((nome||'?').charAt(0));
+      }
+
+      if(appData.prog) {
+        appData.prog.forEach((r, i) => { 
+          if(i > 0 && r[1]) {
+            let tipo = r[3] || 'Girone';
+            let card = `<div class="match-card">
+              <div class="match-card-header">
+                <span class="match-time"><i class="fas fa-clock"></i> ${r[0] || 'Data da definire'}</span>
+                <span class="match-badge">${tipo}</span>
+              </div>
+              <div class="match-teams">
+                <div class="match-team"><img src="${logoFor(r[1])}" class="match-team-logo" onerror="this.src='https://via.placeholder.com/60/0b1264/c5a059?text=?'"><span class="match-team-name">${r[1]}</span></div>
+                <div class="match-center"><span class="match-vs">VS</span></div>
+                <div class="match-team"><img src="${logoFor(r[2])}" class="match-team-logo" onerror="this.src='https://via.placeholder.com/60/0b1264/c5a059?text=?'"><span class="match-team-name">${r[2]}</span></div>
+              </div>
+            </div>`;
+            hCal += card;
+            if(r[0] && r[0].toLowerCase().includes(oggiStr)) hOggi += card;
+          }
+        });
+      }
+
+      if(appData.ris) {
+        let risCopia = [...appData.ris].reverse();
+        risCopia.forEach(r => { 
+          if(r[0] && !r[0].toLowerCase().includes("match")) {
+            let squadre = r[0].split(" vs ");
+            let nomeA = squadre[0] ? squadre[0].trim() : '?';
+            let nomeB = squadre[1] ? squadre[1].trim() : '?';
+            let gol = (r[1] || '-').split('-');
+            hRis += `<div class="match-card is-result">
+              <div class="match-card-header">
+                <span class="match-time"><i class="fas fa-flag-checkered"></i> Finale</span>
+                <span class="match-badge result">Disputata</span>
+              </div>
+              <div class="match-teams">
+                <div class="match-team"><img src="${logoFor(nomeA)}" class="match-team-logo" onerror="this.src='https://via.placeholder.com/60/0b1264/c5a059?text=?'"><span class="match-team-name">${nomeA}</span></div>
+                <div class="match-center"><span class="match-score">${(gol[0]||'-').trim()} - ${(gol[1]||'-').trim()}</span></div>
+                <div class="match-team"><img src="${logoFor(nomeB)}" class="match-team-logo" onerror="this.src='https://via.placeholder.com/60/0b1264/c5a059?text=?'"><span class="match-team-name">${nomeB}</span></div>
+              </div>
+              ${(r[2] || r[3]) ? `<div class="match-extra">${r[2] ? `<span><i class="fas fa-futbol" style="color:var(--gold)"></i> ${r[2]}</span>` : ''}${r[3] ? `<span><i class="fas fa-star" style="color:var(--gold)"></i> MVP: ${r[3]}</span>` : ''}</div>` : ''}
+            </div>`;
+          }
+        });
+      }
+
+      document.getElementById('listaCalendarioOggi').innerHTML = hOggi || `<div class="empty-state"><i class="fas fa-calendar-day"></i>Nessun match per oggi</div>`;
+      document.getElementById('listaCalendario').innerHTML = hCal || `<div class="empty-state"><i class="fas fa-calendar"></i>Nessun match in programma</div>`;
+      document.getElementById('listaRisultati').innerHTML = hRis || `<div class="empty-state"><i class="fas fa-list"></i>Nessun risultato</div>`;
+    }
+
+    function renderTabellone() {
+      let resMap = {};
+      if(appData.ris) appData.ris.forEach(r => { if(r[0]) resMap[r[0]] = r[1]; });
+
+      let rounds = { "Quarti": [], "Semi": [], "Finale": [] };
+      if(appData.prog) appData.prog.forEach((r, i) => { if(i > 0 && r[3] && rounds[r[3]] !== undefined) rounds[r[3]].push({ sqA: r[1], sqB: r[2], time: r[0] }); });
+
+      function getScore(m) {
+        if(!m) return [null, null];
+        let res = resMap[m.sqA + " vs " + m.sqB];
+        if(!res) return [null, null];
+        let parts = res.split('-');
+        return [parts[0] ? parts[0].trim() : null, parts[1] ? parts[1].trim() : null];
+      }
+
+      function matchBox(m, extraClass) {
+        if(!m) return `<div class="bg-match tbd ${extraClass||''}"><div class="bg-time">Da definire</div><div class="bg-row"><span class="team-name">TBD</span></div><div class="bg-row"><span class="team-name">TBD</span></div></div>`;
+        let [gA, gB] = getScore(m);
+        let hasScore = gA !== null && gB !== null;
+        let aWin = hasScore && parseInt(gA) > parseInt(gB);
+        let bWin = hasScore && parseInt(gB) > parseInt(gA);
+        return `<div class="bg-match ${extraClass||''}">
+          <div class="bg-time">${m.time || 'Da definire'}</div>
+          <div class="bg-row ${aWin?'winner':''}"><span class="team-name">${m.sqA}</span><span class="score">${hasScore ? gA : ''}</span></div>
+          <div class="bg-row ${bWin?'winner':''}"><span class="team-name">${m.sqB}</span><span class="score">${hasScore ? gB : ''}</span></div>
+        </div>`;
+      }
+
+      // Quarti: 4 match totali, 2 a sinistra e 2 a destra (ordine di inserimento). Semi: 2 match, 1 a sinistra e 1 a destra.
+      let qL = [rounds.Quarti[0] || null, rounds.Quarti[1] || null];
+      let qR = [rounds.Quarti[2] || null, rounds.Quarti[3] || null];
+      let sL = rounds.Semi[0] || null;
+      let sR = rounds.Semi[1] || null;
+      let finale = rounds.Finale[0] || null;
+
+      // Struttura: Quarti-SX | Semi-SX | Finale | Semi-DX | Quarti-DX, in un'unica griglia a 5 colonne
+      let h = `<div class="bracket-container"><div class="bracket-grid">
+        <div class="bracket-col">
+          <div class="bracket-round-label">Quarti</div>
+          <div class="bracket-col-inner col-quarti">${qL.map(m => matchBox(m)).join('')}</div>
+        </div>
+        <div class="bracket-col">
+          <div class="bracket-round-label">Semifinale</div>
+          <div class="bracket-col-inner col-semi">${matchBox(sL)}</div>
+        </div>
+        <div class="bracket-col">
+          <div class="bracket-round-label">Finale</div>
+          <div class="bracket-col-inner col-finale">
+            <i class="fas fa-trophy trophy-icon"></i>
+            ${matchBox(finale, 'final')}
+          </div>
+        </div>
+        <div class="bracket-col">
+          <div class="bracket-round-label">Semifinale</div>
+          <div class="bracket-col-inner col-semi">${matchBox(sR)}</div>
+        </div>
+        <div class="bracket-col">
+          <div class="bracket-round-label">Quarti</div>
+          <div class="bracket-col-inner col-quarti">${qR.map(m => matchBox(m)).join('')}</div>
+        </div>
+      </div></div>`;
+      document.getElementById('bracketContent').innerHTML = h;
+    }
+
+    function renderClassifiche() {
+      let stats = {}; let logoMap = {};
+      if(appData.sq) appData.sq.forEach((s,i) => { if(i>0) logoMap[s[0]] = s[1]; });
+      if(appData.ris) appData.ris.forEach(r => {
+        let parti = r[0].split(" vs "); let gol = r[1].split("-");
+        if(parti.length==2 && gol.length==2){
+          let s1=parti[0].trim(), s2=parti[1].trim(), g1=parseInt(gol[0]), g2=parseInt(gol[1]);
+          if(!stats[s1]) stats[s1]={p:0,v:0,n:0,l:0,gf:0,gs:0}; if(!stats[s2]) stats[s2]={p:0,v:0,n:0,l:0,gf:0,gs:0};
+          stats[s1].gf+=g1; stats[s1].gs+=g2; stats[s2].gf+=g2; stats[s2].gs+=g1;
+          if(g1>g2){ stats[s1].p+=3; stats[s1].v++; stats[s2].l++; } else if(g2>g1){ stats[s2].p+=3; stats[s2].v++; stats[s1].l++; } else { stats[s1].p++; stats[s2].p++; stats[s1].n++; stats[s2].n++; }
+        }
+      });
+      let gironiMap = {}; 
+      if(appData.sq) appData.sq.forEach((s,i) => { if(i>0){ if(!gironiMap[s[2]]) gironiMap[s[2]]=[]; gironiMap[s[2]].push({nome: s[0], stats: stats[s[0]] || {p:0,v:0,n:0,l:0,gf:0,gs:0}}); } });
+      let h = ""; let gironeIdx = 0;
+      for(let g in gironiMap){
+        gironiMap[g].sort((a,b) => b.stats.p - a.stats.p);
+        h += `<div class="table-girone"><div class="girone-header"><i class="fas fa-shield-halved"></i><h4>${g}</h4></div><div class="girone-body"><table class='fixed-table table table-borderless table-sm small text-white'><thead><tr><th class="col-rank">#</th><th class="col-team">Squadra</th><th class="col-stats" title="Partite Giocate">PG</th><th class="col-pts" title="Punti">PT</th><th class="col-stats" title="Gol Fatti">GF</th><th class="col-stats" title="Gol Subiti">GS</th></tr></thead><tbody>`;
+        gironiMap[g].forEach((t, i) => {
+          // Specchiatura tra i due gironi: nel 1° girone trovato la posizione i (0-based) prende il colore (i+1);
+          // nel 2° girone la stessa posizione prende il colore opposto (4-i), così 1°A=4°B, 2°A=3°B, ecc.
+          let rank = (gironeIdx === 0) ? (i + 1) : (4 - i);
+          rank = Math.max(1, Math.min(4, rank));
+          let c = 'pos-rank pos-r' + rank;
+          let pg = t.stats.v + t.stats.n + t.stats.l;
+          h += `<tr><td><span class="${c}">${i+1}</span></td><td class="col-team"><img src="${logoMap[t.nome]}" class="team-logo-mini" onerror="this.style.display='none'"> ${t.nome}</td><td>${pg}</td><td class="col-pts"><b>${t.stats.p}</b></td><td>${t.stats.gf}</td><td>${t.stats.gs}</td></tr>`;
+        });
+        h += `</tbody></table></div></div>`;
+        gironeIdx++;
+      }
+      document.getElementById('areaClassifiche').innerHTML = h;
+    }
+
+    function renderSquadre() {
+      let logoMap = {}; if(appData.sq) appData.sq.forEach((s,i) => { if(i>0) logoMap[s[0]] = s[1]; });
+      let dist = {}; if(appData.gio) appData.gio.forEach((g,i) => { if(i>0){ if(!dist[g[1]]) dist[g[1]]=[]; dist[g[1]].push({n:g[0], r:g[3]}); } });
+      let h = ""; for(let s in dist){
+        let id = 'team_'+s.replace(/\s+/g, '_');
+        h += `<button class="btn-team-tab" onclick="toggleTeam('${id}')"><span><img src="${logoMap[s]}" class="team-logo-mini" onerror="this.style.display='none'"> ${s}</span><i class="fas fa-chevron-down"></i></button><div id="${id}" class="team-details">` + dist[s].sort((a,b)=>{let o={"Presidente":1,"Allenatore":2,"Giocatore":3}; return o[a.r]-o[b.r]}).map(p => `<div class="player-list-item"><span>${p.n}</span> <span class="role-tag">${p.r}</span></div>`).join('') + `</div>`;
+      }
+      document.getElementById('areaSquadreDistinte').innerHTML = h;
+    }
+
+    function renderMarcatori() {
+      let mC = {}; let mvpC = {}; let presC = {};
+      if(appData.gio) appData.gio.forEach((g,i) => { if(i>0){ let o = {val:0, games:new Set(), squadra:g[1], foto:g[2]||""}; if(g[3]==="Presidente") presC[g[0]]=o; else { mC[g[0]]=o; mvpC[g[0]]={...o, games: new Set()}; } } });
+      if(appData.ris) appData.ris.forEach((r, idx) => {
+        if(r[2]) r[2].split(", ").forEach(n => { if(mC[n.trim()]) { mC[n.trim()].val++; mC[n.trim()].games.add(idx); } });
+        if(r[3] && mvpC[r[3].trim()]) { mvpC[r[3].trim()].val++; mvpC[r[3].trim()].games.add(idx); }
+        if(r[4]) r[4].split(", ").forEach(n => { if(presC[n.trim()]) { presC[n.trim()].val++; presC[n.trim()].games.add(idx); } });
+      });
+      const gen = (map, icon) => Object.keys(map).sort((a,b)=>map[b].val - map[a].val).map(n => `<div class="player-row"><img src="${map[n].foto}" class="player-photo" onerror="this.src='https://via.placeholder.com/150'"><div class="player-info"><p class="player-name">${n}</p><p class="player-team" style="font-size:0.7rem; color:var(--gold); margin-top:-5px;">${map[n].squadra}</p></div><div class="player-score">${map[n].val} ${icon}<br><small style="font-size:0.6rem">in ${map[n].games.size} gare</small></div></div>`).join('');
+      document.getElementById('areaMarcatori').innerHTML = gen(mC, '⚽');
+      document.getElementById('areaMVP').innerHTML = gen(mvpC, '🌟');
+      document.getElementById('areaPresidenti').innerHTML = gen(presC, '👔');
+    }
+
+    async function aggiornaTutto() {
+      try {
+        let res = await apiGet("getDropdownData");
+        if(!res.ok) return;
+        let data = res.data;
+        popolaSelect('selectGirone', data.gironi, "Girone");
+        popolaSelect('selectSquadra', data.squadre, "Squadra");
+        popolaSelect('progSqA', data.squadre, "Squadra A");
+        popolaSelect('progSqB', data.squadre, "Squadra B");
+
+        let giocatoriRes = await apiGet("getData", { sheet: "Giocatori" });
+        let giocatoriRaw = giocatoriRes.ok ? giocatoriRes.data : [];
+        let gList = giocatoriRaw.filter(r => r[3] === "Giocatore").map(r => r[0]);
+        let pList = giocatoriRaw.filter(r => r[3] === "Presidente").map(r => r[0]);
+        popolaSelect('selectMarcatore', gList, "Marcatore");
+        popolaSelect('selectPresidente', pList, "Presidente");
+        popolaSelect('selectMVP', gList, "MVP");
+
+        let el = document.getElementById('selectPartitaProgrammata');
+        if(el){ el.innerHTML = '<option value="">Scegli match...</option>'; data.partite.forEach(p => el.innerHTML += `<option value="${p.index}">${p.testo}</option>`); }
+      } catch(err) {
+        console.error("Errore aggiornaTutto:", err);
+      }
+    }
+
+    function popolaSelect(id, lista, placeholder) {
+      let el = document.getElementById(id); if(!el) return;
+      el.innerHTML = `<option value="">${placeholder}</option>` + lista.map(item => `<option value="${item}">${item}</option>`).join('');
+    }
+
+    async function salvaSponsor() {
+      let d = [document.getElementById('logoSponsor').value, document.getElementById('linkSponsor').value];
+      let res = await apiPost({ action: "inserisciDati", sheetName: "Sponsor", dati: d, token: adminToken });
+      if(res.ok) { alert("Sponsor Aggiunto!"); document.getElementById('logoSponsor').value = ""; document.getElementById('linkSponsor').value = ""; caricaDatiPubblici(); }
+      else alert("Errore: " + (res.error || "operazione non riuscita"));
+    }
+    async function salvaGirone() {
+      let res = await apiPost({ action: "inserisciDati", sheetName: "Gironi", dati: [document.getElementById('nomeGirone').value], token: adminToken });
+      if(res.ok) { alert("OK"); aggiornaTutto(); } else alert("Errore: " + (res.error || "operazione non riuscita"));
+    }
+    async function salvaSquadra() {
+      let id = document.getElementById('edit_row_Squadre').value;
+      let d = [document.getElementById('nomeSquadra').value, document.getElementById('logoSquadra').value, document.getElementById('selectGirone').value];
+      let res = await apiPost({ action: "inserisciDati", sheetName: "Squadre", dati: d, editIndex: id, token: adminToken });
+      if(res.ok) { alert("Salvato!"); aggiornaTutto(); caricaDatiPubblici(); document.getElementById('edit_row_Squadre').value=""; }
+      else alert("Errore: " + (res.error || "operazione non riuscita"));
+    }
+    async function salvaGiocatore() {
+      let id = document.getElementById('edit_row_Giocatori').value;
+      let d = [document.getElementById('nomeGiocatore').value, document.getElementById('selectSquadra').value, document.getElementById('fotoGiocatore').value, document.getElementById('ruoloSoggetto').value];
+      let res = await apiPost({ action: "inserisciDati", sheetName: "Giocatori", dati: d, editIndex: id, token: adminToken });
+      if(res.ok) { alert("Salvato!"); aggiornaTutto(); caricaDatiPubblici(); document.getElementById('edit_row_Giocatori').value=""; }
+      else alert("Errore: " + (res.error || "operazione non riuscita"));
+    }
+    async function salvaProgramma() {
+      let id = document.getElementById('edit_row_Programmazione').value;
+      let d = [document.getElementById('dataOraPartita').value, document.getElementById('progSqA').value, document.getElementById('progSqB').value, document.getElementById('tipoMatch').value];
+      let res = await apiPost({ action: "inserisciDati", sheetName: "Programmazione", dati: d, editIndex: id, token: adminToken });
+      if(res.ok) { alert("OK"); caricaDatiPubblici(); aggiornaTutto(); document.getElementById('edit_row_Programmazione').value=""; }
+      else alert("Errore: " + (res.error || "operazione non riuscita"));
+    }
+    function aggiungiMarcatore(tipo) { let m = tipo === 'G' ? document.getElementById('selectMarcatore').value : document.getElementById('selectPresidente').value; if(m) { if(tipo==='G') marcatoriPartita.push(m); else presidentiPartita.push(m); document.getElementById('marcatoriList').innerHTML += `<span class="marcatore-tag">${m}</span>`; } }
+    function resetMarcatori() { marcatoriPartita = []; presidentiPartita = []; document.getElementById('marcatoriList').innerHTML = ""; }
+    async function salvaRisultatoFinale() {
+      let id = document.getElementById('edit_row_Risultati').value;
+      let sel = document.getElementById('selectPartitaProgrammata');
+      if(!sel.value) return alert("Scegli una partita!");
+      let d = [sel.options[sel.selectedIndex].text, document.getElementById('goalA').value + "-" + document.getElementById('goalB').value, marcatoriPartita.join(", "), document.getElementById('selectMVP').value, presidentiPartita.join(", ")];
+      let res = await apiPost({ action: "inserisciDati", sheetName: "Risultati", dati: d, editIndex: id, token: adminToken });
+      if(res.ok) { alert("Risultato salvato!"); document.getElementById('edit_row_Risultati').value=""; resetMarcatori(); caricaDatiPubblici(); }
+      else alert("Errore: " + (res.error || "operazione non riuscita"));
+    }
+
+    async function caricaDatiElimina() {
+      let s = document.getElementById('deleteSheet').value; if(!s) return;
+      let res = await apiGet("getData", { sheet: s });
+      let d = res.ok ? res.data : [];
+      document.getElementById('deleteList').innerHTML = d.map((r, i) => i === 0 ? "" : `<div class="player-list-item"><span>${(s==="Programmazione")?r[1]+" vs "+r[2]:r[0]}</span><div><i class="fas fa-edit text-primary me-3" onclick="preparaModifica('${s}', ${i})"></i><i class="fas fa-trash text-danger" onclick="cancella(${i})"></i></div></div>`).join('');
+    }
+
+    async function preparaModifica(sheet, idx) {
+      let res = await apiGet("getData", { sheet: sheet });
+      let d = res.ok ? res.data : [];
+      let row = d[idx];
+      if(sheet==="Squadre"){ document.getElementById('nomeSquadra').value=row[0]; document.getElementById('logoSquadra').value=row[1]; document.getElementById('selectGirone').value=row[2]; document.getElementById('edit_row_Squadre').value=idx; }
+      else if(sheet==="Giocatori"){ document.getElementById('nomeGiocatore').value=row[0]; document.getElementById('selectSquadra').value=row[1]; document.getElementById('fotoGiocatore').value=row[2]; document.getElementById('ruoloSoggetto').value=row[3]; document.getElementById('edit_row_Giocatori').value=idx; }
+      else if(sheet==="Programmazione"){ document.getElementById('dataOraPartita').value=row[0]; document.getElementById('progSqA').value=row[1]; document.getElementById('progSqB').value=row[2]; document.getElementById('tipoMatch').value=row[3]; document.getElementById('edit_row_Programmazione').value=idx; }
+      alert("Dati pronti."); window.scrollTo(0,0);
+    }
+    async function cancella(idx) {
+      if(!confirm("Sicuro?")) return;
+      let s = document.getElementById('deleteSheet').value;
+      let res = await apiPost({ action: "eliminaRiga", sheetName: s, rowIndex: idx, token: adminToken });
+      if(res.ok) { caricaDatiElimina(); aggiornaTutto(); caricaDatiPubblici(); }
+      else alert("Errore: " + (res.error || "operazione non riuscita"));
+    }
+  </script>
+</body>
+</html>
