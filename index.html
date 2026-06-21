@@ -39,10 +39,11 @@
     .nav-item i { font-size: 1.3rem; display: block; }
     .active-nav { color: var(--gold) !important; }
     .section { display: none; padding: 20px; animation: fadeIn 0.4s; }
-    .fantakings-section { padding: 0 !important; position: relative; height: calc(100vh - 60px); min-height: 400px; }
-    .fantakings-back-float { position: absolute; top: 10px; left: 10px; z-index: 5; background: rgba(11,18,100,0.85); backdrop-filter: blur(6px); color: var(--gold); border: 1px solid var(--gold); border-radius: 30px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.35); transition: width 0.25s ease; overflow: hidden; white-space: nowrap; }
-    .fantakings-back-float span { display: none; font-size: 0.72rem; font-weight: 600; margin-left: 6px; margin-right: 4px; }
-    .fantakings-back-float:hover { width: 168px; justify-content: flex-start; padding-left: 11px; }
+    .fantakings-section { padding: 0 !important; position: fixed; top: 0; left: 0; right: 0; bottom: 0; height: 100vh; min-height: 400px; z-index: 950; background: var(--dark-blue); }
+    .fantakings-back-float { position: absolute; top: 10px; right: 10px; left: auto; z-index: 5; background: rgba(11,18,100,0.85); backdrop-filter: blur(6px); color: var(--gold); border: 1px solid var(--gold); border-radius: 30px; width: 30px; height: 30px; display: flex; align-items: center; justify-content: flex-end; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.35); transition: width 0.25s ease; overflow: hidden; white-space: nowrap; font-size: 0.78rem; }
+    .fantakings-back-float i { flex-shrink: 0; width: 30px; text-align: center; font-size: 0.7rem; }
+    .fantakings-back-float span { display: none; font-size: 0.68rem; font-weight: 600; margin-right: 8px; }
+    .fantakings-back-float:hover { width: 150px; padding-left: 8px; }
     .fantakings-back-float:hover span { display: inline; }
     .fantakings-iframe { width: 100%; height: 100%; border: none; display: block; position: relative; z-index: 2; background: var(--dark-blue); }
     .fantakings-loading { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: rgba(255,255,255,0.6); z-index: 1; }
@@ -232,7 +233,7 @@
 
     <div id="fantakings" class="section fantakings-section">
       <div class="fantakings-back-float" onclick="chiudiFantaKings()">
-        <i class="fas fa-arrow-left"></i><span>Torna a Kings Cup</span>
+        <span>Torna a Kings Cup</span><i class="fas fa-arrow-left"></i>
       </div>
       <div id="fantakingsLoading" class="fantakings-loading">
         <i class="fas fa-futbol fa-spin"></i>
@@ -329,7 +330,7 @@
     // CONFIGURAZIONE BACKEND
     // Sostituisci con l'URL della tua Web App Apps Script (Distribuisci > Nuova distribuzione > Web App)
     // ============================================================
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbyXTpYK7WqWFuxnrANHxHXPGrLUmvzSI4W0tIymaJQnOa11biAMPQwqKP7FP0FgmFgzHA/exec";
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbyDyy8cIQqx5JqQcU8H0q_lsqbxe_eD65Uo1Yv6xGRMeIt9qWJCWjVkzMkQ99Brf1CaSQ/exec";
 
     let appData = { prog: [], ris: [], sq: [], gio: [], spo: [] };
     let marcatoriPartita = [];
