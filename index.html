@@ -168,16 +168,16 @@
   <div id="splash">
     <img src="https://i.imgur.com/FFWT0TZ.png" class="logo-main">
     <button class="btn-enter" onclick="avviaApp()">ENTRA IN MONDO KINGSCUP</button>
-    <span class="link-admin-access" onclick="apriLoginAdmin()">Accesso Admin</span>
+    <span class="link-admin-access" onclick="apriLoginAdmin()">Gestione torneo</span>
   </div>
 
   <div id="adminLoginOverlay" class="admin-login-overlay" style="display:none;">
     <div class="admin-login-box">
-      <h5><i class="fas fa-user-shield"></i> Accesso Admin</h5>
-      <input type="email" id="adminEmailInput" class="form-control" placeholder="Email">
-      <input type="password" id="adminPasswordInput" class="form-control" placeholder="Password">
+      <h5><i class="fas fa-shield-halved"></i> Pannello organizzatori</h5>
+      <input type="text" id="adminEmailInput" class="form-control" placeholder="ID organizzatore" autocomplete="off">
+      <input type="text" id="adminPasswordInput" class="form-control" placeholder="Codice accesso" autocomplete="off">
       <div id="adminLoginError" class="admin-login-error" style="display:none;"></div>
-      <button class="btn-enter w-100" onclick="eseguiLoginAdmin()">Accedi</button>
+      <button class="btn-enter w-100" onclick="eseguiLoginAdmin()">Conferma</button>
       <button class="btn-admin-cancel" onclick="chiudiLoginAdmin()">Annulla</button>
     </div>
   </div>
@@ -329,7 +329,7 @@
     // CONFIGURAZIONE BACKEND
     // Sostituisci con l'URL della tua Web App Apps Script (Distribuisci > Nuova distribuzione > Web App)
     // ============================================================
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzT0dL4XF5VF_hWhzk8wegpbBmwNhCrxWU1nIjodzvtMhytRCWhdUxtImdz-SiCcvnn/exec";
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbwQR2qFP_E_sekFukXFQUfFRFVtwSxJ-mgD2V7bs6jJZIQK-uW34Mv8Gtf8e2qxHIXg-g/exec";
 
     let appData = { prog: [], ris: [], sq: [], gio: [], spo: [] };
     let marcatoriPartita = [];
