@@ -336,7 +336,7 @@
     // CONFIGURAZIONE BACKEND
     // Sostituisci con l'URL della tua Web App Apps Script (Distribuisci > Nuova distribuzione > Web App)
     // ============================================================
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzTjtw28dPUSPKOCxWKr-4EioNK63fDa0Mu9JxBKSAk9Xu-QtHjEgoWZJzq8BcnBnhyjw/exec";
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbwfd4_bVg9RBfrf9Okey5t-TpVCzOQh8l8kCCorkhIspeaBd3tXLawtH7y4VPOH7DKh/exec";
 
     let appData = { prog: [], ris: [], sq: [], gio: [], spo: [] };
     let marcatoriPartita = [];
@@ -725,7 +725,7 @@
 
     function renderMarcatori() {
       let mC = {}; let mvpC = {}; let presC = {};
-      if(appData.gio) appData.gio.forEach((g,i) => { if(i>0){ let o = {val:0, games:new Set(), squadra:g[1], foto:g[2]||""}; if(g[3]==="Presidente") presC[g[0]]=o; else { mC[g[0]]=o; mvpC[g[0]]={...o, games: new Set()}; } } });
+      if(appData.gio) appData.gio.forEach((g,i) => { if(i>0){ let o = {val:0, games:new Set(), squadra:g[1], foto:g[2]||""}; if(g[3]==="Presidente") presC[g[0]]=o; else if(g[3]==="Giocatore") { mC[g[0]]=o; mvpC[g[0]]={...o, games: new Set()}; } } });
       if(appData.ris) appData.ris.forEach((r, idx) => {
         if(r[2]) r[2].split(", ").forEach(n => { if(mC[n.trim()]) { mC[n.trim()].val++; mC[n.trim()].games.add(idx); } });
         if(r[3] && mvpC[r[3].trim()]) { mvpC[r[3].trim()].val++; mvpC[r[3].trim()].games.add(idx); }
