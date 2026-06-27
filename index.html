@@ -336,7 +336,7 @@
     // CONFIGURAZIONE BACKEND
     // Sostituisci con l'URL della tua Web App Apps Script (Distribuisci > Nuova distribuzione > Web App)
     // ============================================================
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxwG2j-JpNMEOPq8H2YzA3cwUsnUS0enJVSO57JygkyCCd8HD98zKAQW6tivnHNVI_gXw/exec";
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxqaHTKvhLIBCiGFHDAVxnqavkhrD2WAqlYdddqWihA-_VKRqtJS6sZgzitPmZr61hAnw/exec";
 
     let appData = { prog: [], ris: [], sq: [], gio: [], spo: [] };
     let marcatoriPartita = [];
@@ -714,12 +714,28 @@
     }
 
     function renderSquadre() {
-      let logoMap = {}; if(appData.sq) appData.sq.forEach((s,i) => { if(i>0) logoMap[s[0]] = s[1]; });
-      let dist = {}; if(appData.gio) appData.gio.forEach((g,i) => { if(i>0){ if(!dist[g[1]]) dist[g[1]]=[]; dist[g[1]].push({n:g[0], r:g[3]}); } });
-      let h = ""; for(let s in dist){
-        let id = 'team_'+s.replace(/\s+/g, '_');
-        h += `<button class="btn-team-tab" onclick="toggleTeam('${id}')"><span><img src="${logoMap[s]}" class="team-logo-mini" onerror="this.style.display='none'"> ${s}</span><i class="fas fa-chevron-down"></i></button><div id="${id}" class="team-details">` + dist[s].sort((a,b)=>{let o={"Presidente":1,"Allenatore":2,"Giocatore":3}; return o[a.r]-o[b.r]}).map(p => `<div class="player-list-item"><span>${p.n}</span> <span class="role-tag">${p.r}</span></div>`).join('') + `</div>`;
-      }
+      // Nome e logo presi da appData.sq (foglio Squadre) — fonte di verità aggiornata
+      // I giocatori da appData.gio vengono abbinati per nome squadra (campo g[1])
+      // Se il nome squadra è stato rinominato, i giocatori potrebbero ancora avere il vecchio nome:
+      // per gestirlo mostriamo comunque le squadre dal foglio Squadre e poi aggiungiamo i giocatori che matchano
+      let squadreList = []; let logoMap = {};
+      if(appData.sq) appData.sq.forEach((s,i) => { if(i>0 && s[0]){ squadreList.push(s[0]); logoMap[s[0]] = s[1]; } });
+
+      // Mappa giocatori per nome squadra (come risulta nel foglio Giocatori)
+      let dist = {};
+      if(appData.gio) appData.gio.forEach((g,i) => { if(i>0){ if(!dist[g[1]]) dist[g[1]]=[]; dist[g[1]].push({n:g[0], r:g[3]}); } });
+
+      let h = "";
+      // Iteriamo sulle squadre dal foglio Squadre (nomi sempre aggiornati)
+      squadreList.forEach(nomeSquadra => {
+        let id = 'team_'+nomeSquadra.replace(/\s+/g, '_');
+        // Cerchiamo i giocatori: prima match esatto, poi cerchiamo se c'è una chiave simile
+        let giocatori = dist[nomeSquadra] || [];
+        h += `<button class="btn-team-tab" onclick="toggleTeam('${id}')"><span><img src="${logoMap[nomeSquadra]}" class="team-logo-mini" onerror="this.style.display='none'"> ${nomeSquadra}</span><i class="fas fa-chevron-down"></i></button>`;
+        h += `<div id="${id}" class="team-details">` + (giocatori.length > 0
+          ? giocatori.sort((a,b)=>{let o={"Presidente":1,"Allenatore":2,"Giocatore":3}; return o[a.r]-o[b.r];}).map(p => `<div class="player-list-item"><span>${p.n}</span> <span class="role-tag">${p.r}</span></div>`).join('')
+          : `<div class="player-list-item" style="color:rgba(255,255,255,0.4)"><span>Nessun giocatore associato</span></div>`) + `</div>`;
+      });
       document.getElementById('areaSquadreDistinte').innerHTML = h;
     }
 
