@@ -336,7 +336,7 @@
     // CONFIGURAZIONE BACKEND
     // Sostituisci con l'URL della tua Web App Apps Script (Distribuisci > Nuova distribuzione > Web App)
     // ============================================================
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbwfd4_bVg9RBfrf9Okey5t-TpVCzOQh8l8kCCorkhIspeaBd3tXLawtH7y4VPOH7DKh/exec";
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxwG2j-JpNMEOPq8H2YzA3cwUsnUS0enJVSO57JygkyCCd8HD98zKAQW6tivnHNVI_gXw/exec";
 
     let appData = { prog: [], ris: [], sq: [], gio: [], spo: [] };
     let marcatoriPartita = [];
@@ -781,21 +781,21 @@
       let id = document.getElementById('edit_row_Squadre').value;
       let d = [document.getElementById('nomeSquadra').value, document.getElementById('logoSquadra').value, document.getElementById('selectGirone').value];
       let res = await apiPost({ action: "inserisciDati", sheetName: "Squadre", dati: d, editIndex: id, token: adminToken });
-      if(res.ok) { alert("Salvato!"); aggiornaTutto(); caricaDatiPubblici(); document.getElementById('edit_row_Squadre').value=""; }
+      if(res.ok) { alert("Salvato!"); await caricaDatiPubblici(); aggiornaTutto(); document.getElementById('edit_row_Squadre').value=""; }
       else alert("Errore: " + (res.error || "operazione non riuscita"));
     }
     async function salvaGiocatore() {
       let id = document.getElementById('edit_row_Giocatori').value;
       let d = [document.getElementById('nomeGiocatore').value, document.getElementById('selectSquadra').value, document.getElementById('fotoGiocatore').value, document.getElementById('ruoloSoggetto').value];
       let res = await apiPost({ action: "inserisciDati", sheetName: "Giocatori", dati: d, editIndex: id, token: adminToken });
-      if(res.ok) { alert("Salvato!"); aggiornaTutto(); caricaDatiPubblici(); document.getElementById('edit_row_Giocatori').value=""; }
+      if(res.ok) { alert("Salvato!"); await caricaDatiPubblici(); aggiornaTutto(); document.getElementById('edit_row_Giocatori').value=""; }
       else alert("Errore: " + (res.error || "operazione non riuscita"));
     }
     async function salvaProgramma() {
       let id = document.getElementById('edit_row_Programmazione').value;
       let d = [document.getElementById('dataOraPartita').value, document.getElementById('progSqA').value, document.getElementById('progSqB').value, document.getElementById('tipoMatch').value];
       let res = await apiPost({ action: "inserisciDati", sheetName: "Programmazione", dati: d, editIndex: id, token: adminToken });
-      if(res.ok) { alert("OK"); caricaDatiPubblici(); aggiornaTutto(); document.getElementById('edit_row_Programmazione').value=""; }
+      if(res.ok) { alert("OK"); await caricaDatiPubblici(); aggiornaTutto(); document.getElementById('edit_row_Programmazione').value=""; }
       else alert("Errore: " + (res.error || "operazione non riuscita"));
     }
     function aggiungiMarcatore(tipo) { let m = tipo === 'G' ? document.getElementById('selectMarcatore').value : document.getElementById('selectPresidente').value; if(m) { if(tipo==='G') marcatoriPartita.push(m); else presidentiPartita.push(m); document.getElementById('marcatoriList').innerHTML += `<span class="marcatore-tag">${m}</span>`; } }
@@ -830,7 +830,7 @@
       if(!confirm("Sicuro?")) return;
       let s = document.getElementById('deleteSheet').value;
       let res = await apiPost({ action: "eliminaRiga", sheetName: s, rowIndex: idx, token: adminToken });
-      if(res.ok) { caricaDatiElimina(); aggiornaTutto(); caricaDatiPubblici(); }
+      if(res.ok) { await caricaDatiPubblici(); caricaDatiElimina(); aggiornaTutto(); }
       else alert("Errore: " + (res.error || "operazione non riuscita"));
     }
   </script>
