@@ -74,7 +74,12 @@
     .sub-item.active { background: var(--gold); color: white; }
     
     .bracket-container { padding: 10px 0 24px; overflow-x: auto; }
-    .bracket-grid { display: grid; grid-template-columns: 175px 175px 195px 175px 175px; align-items: center; column-gap: 26px; min-width: 940px; width: max-content; margin: 0 auto; }
+    .bracket-section-title { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; padding: 10px 4px 8px; margin-bottom: 6px; border-bottom: 1px solid rgba(197,160,89,0.3); }
+    .bracket-section-title.playoff { color: #60a5fa; border-color: rgba(96,165,250,0.3); }
+    .bracket-section-title.knockout { color: var(--gold); }
+    .bracket-section-sep { height: 1px; background: rgba(255,255,255,0.08); margin: 18px 0 14px; }
+    .bracket-grid { display: grid; grid-template-columns: 175px 195px 175px; align-items: center; column-gap: 26px; min-width: 580px; width: max-content; margin: 0 auto; }
+    .bracket-grid-5 { display: grid; grid-template-columns: 175px 175px 195px 175px 175px; align-items: center; column-gap: 26px; min-width: 940px; width: max-content; margin: 0 auto; }
     .bracket-round-label { font-size: 0.62rem; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; text-align: center; margin-bottom: 10px; opacity: 0.85; font-weight: 700; }
     .bracket-col { display: flex; flex-direction: column; height: 100%; }
     .bracket-col-inner { display: flex; flex-direction: column; justify-content: space-around; flex: 1; gap: 18px; position: relative; }
@@ -121,7 +126,8 @@
     .trophy-icon { font-size: 1.7rem; color: var(--gold); margin-bottom: 8px; text-shadow: 0 0 14px rgba(197,160,89,0.6); display: block; text-align: center; }
 
     @media (max-width: 480px) {
-      .bracket-grid { grid-template-columns: 130px 130px 150px 130px 130px; column-gap: 16px; min-width: 700px; }
+      .bracket-grid { grid-template-columns: 130px 150px 130px; column-gap: 16px; min-width: 440px; }
+      .bracket-grid-5 { grid-template-columns: 130px 130px 150px 130px 130px; column-gap: 16px; min-width: 700px; }
       .bg-match { font-size: 0.62rem; padding: 7px 8px; }
     }
 
@@ -147,11 +153,10 @@
     .col-team { width: auto; text-align: left !important; }
     .col-pts { width: 45px; font-weight: bold; }
     .col-stats { width: 30px; }
-    .pos-rank { color: white; border-radius: 50%; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; }
-    .pos-r1 { background: linear-gradient(135deg, #34d399, #059669) !important; box-shadow: 0 2px 6px rgba(5,150,105,0.5); }
-    .pos-r2 { background: linear-gradient(135deg, #60a5fa, #2563eb) !important; box-shadow: 0 2px 6px rgba(37,99,235,0.5); }
-    .pos-r3 { background: linear-gradient(135deg, #fbbf24, #d97706) !important; box-shadow: 0 2px 6px rgba(217,119,6,0.5); }
-    .pos-r4 { background: linear-gradient(135deg, #f87171, #dc2626) !important; box-shadow: 0 2px 6px rgba(220,38,38,0.5); }
+    .pos-rank { border-radius: 50%; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; color: white; }
+    .pos-verde { background: linear-gradient(135deg, #34d399, #059669) !important; box-shadow: 0 2px 6px rgba(5,150,105,0.5); }
+    .pos-giallo { background: linear-gradient(135deg, #fbbf24, #d97706) !important; box-shadow: 0 2px 6px rgba(217,119,6,0.4); color: #1a1a1a !important; }
+    .pos-rosso { background: linear-gradient(135deg, #f87171, #dc2626) !important; box-shadow: 0 2px 6px rgba(220,38,38,0.5); }
     .row-qualified td:first-child { box-shadow: inset 3px 0 0 #5eead4; }
     .btn-team-tab { background: rgba(255,255,255,0.1); color: white; border: 1px solid var(--gold); padding: 12px; margin-bottom: 5px; border-radius: 10px; width: 100%; text-align: left; font-weight: bold; display: flex; align-items: center; justify-content: space-between; }
     .team-logo-mini { width: 25px; height: 25px; object-fit: contain; margin-right: 8px; border-radius: 4px; }
@@ -277,8 +282,10 @@
         <select id="tipoMatch" class="form-select">
           <option value="Girone">Girone</option>
           <option value="Quarti">Quarti</option>
-          <option value="Semi">Semi</option>
-          <option value="Finale">Finale 1-2</option>
+          <option value="Semi Playoff">Semi Playoff</option>
+          <option value="Finale Playoff">Finale Playoff</option>
+          <option value="Semi">Semifinale</option>
+          <option value="Finale">Finale</option>
         </select>
         <select id="progSqA" class="form-select"></select>
         <select id="progSqB" class="form-select"></select>
@@ -329,7 +336,7 @@
     // CONFIGURAZIONE BACKEND
     // Sostituisci con l'URL della tua Web App Apps Script (Distribuisci > Nuova distribuzione > Web App)
     // ============================================================
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbwQR2qFP_E_sekFukXFQUfFRFVtwSxJ-mgD2V7bs6jJZIQK-uW34Mv8Gtf8e2qxHIXg-g/exec";
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzTjtw28dPUSPKOCxWKr-4EioNK63fDa0Mu9JxBKSAk9Xu-QtHjEgoWZJzq8BcnBnhyjw/exec";
 
     let appData = { prog: [], ris: [], sq: [], gio: [], spo: [] };
     let marcatoriPartita = [];
@@ -376,7 +383,7 @@
       let email = document.getElementById('adminEmailInput').value.trim();
       let password = document.getElementById('adminPasswordInput').value;
       let errBox = document.getElementById('adminLoginError');
-      if(!email || !password) { errBox.textContent = "Inserisci email e password."; errBox.style.display = 'block'; return; }
+      if(!email || !password) { errBox.textContent = "Inserisci ID organizzatore e codice accesso."; errBox.style.display = 'block'; return; }
       try {
         let res = await apiPost({ action: "login", email: email, password: password });
         if(res.ok) {
@@ -386,7 +393,7 @@
           chiudiLoginAdmin();
           avviaApp();
         } else {
-          errBox.textContent = res.error || "Accesso negato.";
+          errBox.textContent = "ID organizzatore o codice errati.";
           errBox.style.display = 'block';
         }
       } catch(err) {
@@ -597,7 +604,7 @@
       let resMap = {};
       if(appData.ris) appData.ris.forEach(r => { if(r[0]) resMap[r[0]] = r[1]; });
 
-      let rounds = { "Quarti": [], "Semi": [], "Finale": [] };
+      let rounds = { "Semi Playoff": [], "Finale Playoff": [], "Semi": [], "Finale": [] };
       if(appData.prog) appData.prog.forEach((r, i) => { if(i > 0 && r[3] && rounds[r[3]] !== undefined) rounds[r[3]].push({ sqA: r[1], sqB: r[2], time: r[0] }); });
 
       function getScore(m) {
@@ -621,39 +628,59 @@
         </div>`;
       }
 
-      // Quarti: 4 match totali, 2 a sinistra e 2 a destra (ordine di inserimento). Semi: 2 match, 1 a sinistra e 1 a destra.
-      let qL = [rounds.Quarti[0] || null, rounds.Quarti[1] || null];
-      let qR = [rounds.Quarti[2] || null, rounds.Quarti[3] || null];
-      let sL = rounds.Semi[0] || null;
-      let sR = rounds.Semi[1] || null;
-      let finale = rounds.Finale[0] || null;
+      // --- SEZIONE PLAYOFF (in alto): Semi Playoff SX | Finale Playoff | Semi Playoff DX ---
+      let spL = rounds["Semi Playoff"][0] || null;
+      let spR = rounds["Semi Playoff"][1] || null;
+      let fp  = rounds["Finale Playoff"][0] || null;
 
-      // Struttura: Quarti-SX | Semi-SX | Finale | Semi-DX | Quarti-DX, in un'unica griglia a 5 colonne
-      let h = `<div class="bracket-container"><div class="bracket-grid">
-        <div class="bracket-col">
-          <div class="bracket-round-label">Quarti</div>
-          <div class="bracket-col-inner col-quarti">${qL.map(m => matchBox(m)).join('')}</div>
-        </div>
-        <div class="bracket-col">
-          <div class="bracket-round-label">Semifinale</div>
-          <div class="bracket-col-inner col-semi">${matchBox(sL)}</div>
-        </div>
-        <div class="bracket-col">
-          <div class="bracket-round-label">Finale</div>
-          <div class="bracket-col-inner col-finale">
-            <i class="fas fa-trophy trophy-icon"></i>
-            ${matchBox(finale, 'final')}
+      // --- SEZIONE KNOCKOUT (in basso): Semi SX | Finale | Semi DX ---
+      let sL     = rounds["Semi"][0] || null;
+      let sR     = rounds["Semi"][1] || null;
+      let finale = rounds["Finale"][0] || null;
+
+      let h = `<div class="bracket-container">
+
+        <div class="bracket-section-title playoff"><i class="fas fa-sitemap"></i> Playoff</div>
+        <div class="bracket-grid">
+          <div class="bracket-col">
+            <div class="bracket-round-label">Semifinale</div>
+            <div class="bracket-col-inner col-semi">${matchBox(spL)}</div>
+          </div>
+          <div class="bracket-col">
+            <div class="bracket-round-label">Finale Playoff</div>
+            <div class="bracket-col-inner col-finale">
+              <i class="fas fa-star trophy-icon" style="color:#60a5fa;text-shadow:0 0 14px rgba(96,165,250,0.6)"></i>
+              ${matchBox(fp, 'final')}
+            </div>
+          </div>
+          <div class="bracket-col">
+            <div class="bracket-round-label">Semifinale</div>
+            <div class="bracket-col-inner col-semi">${matchBox(spR)}</div>
           </div>
         </div>
-        <div class="bracket-col">
-          <div class="bracket-round-label">Semifinale</div>
-          <div class="bracket-col-inner col-semi">${matchBox(sR)}</div>
+
+        <div class="bracket-section-sep"></div>
+
+        <div class="bracket-section-title knockout"><i class="fas fa-trophy"></i> Tabellone Principale</div>
+        <div class="bracket-grid">
+          <div class="bracket-col">
+            <div class="bracket-round-label">Semifinale</div>
+            <div class="bracket-col-inner col-semi">${matchBox(sL)}</div>
+          </div>
+          <div class="bracket-col">
+            <div class="bracket-round-label">Finale</div>
+            <div class="bracket-col-inner col-finale">
+              <i class="fas fa-trophy trophy-icon"></i>
+              ${matchBox(finale, 'final')}
+            </div>
+          </div>
+          <div class="bracket-col">
+            <div class="bracket-round-label">Semifinale</div>
+            <div class="bracket-col-inner col-semi">${matchBox(sR)}</div>
+          </div>
         </div>
-        <div class="bracket-col">
-          <div class="bracket-round-label">Quarti</div>
-          <div class="bracket-col-inner col-quarti">${qR.map(m => matchBox(m)).join('')}</div>
-        </div>
-      </div></div>`;
+
+      </div>`;
       document.getElementById('bracketContent').innerHTML = h;
     }
 
@@ -671,21 +698,17 @@
       });
       let gironiMap = {}; 
       if(appData.sq) appData.sq.forEach((s,i) => { if(i>0){ if(!gironiMap[s[2]]) gironiMap[s[2]]=[]; gironiMap[s[2]].push({nome: s[0], stats: stats[s[0]] || {p:0,v:0,n:0,l:0,gf:0,gs:0}}); } });
-      let h = ""; let gironeIdx = 0;
+      let h = "";
       for(let g in gironiMap){
         gironiMap[g].sort((a,b) => b.stats.p - a.stats.p);
         h += `<div class="table-girone"><div class="girone-header"><i class="fas fa-shield-halved"></i><h4>${g}</h4></div><div class="girone-body"><table class='fixed-table table table-borderless table-sm small text-white'><thead><tr><th class="col-rank">#</th><th class="col-team">Squadra</th><th class="col-stats" title="Partite Giocate">PG</th><th class="col-pts" title="Punti">PT</th><th class="col-stats" title="Gol Fatti">GF</th><th class="col-stats" title="Gol Subiti">GS</th></tr></thead><tbody>`;
         gironiMap[g].forEach((t, i) => {
-          // Specchiatura tra i due gironi: nel 1° girone trovato la posizione i (0-based) prende il colore (i+1);
-          // nel 2° girone la stessa posizione prende il colore opposto (4-i), così 1°A=4°B, 2°A=3°B, ecc.
-          let rank = (gironeIdx === 0) ? (i + 1) : (4 - i);
-          rank = Math.max(1, Math.min(4, rank));
-          let c = 'pos-rank pos-r' + rank;
+          let pos = i + 1;
+          let c = pos <= 3 ? 'pos-rank pos-verde' : pos <= 7 ? 'pos-rank pos-giallo' : 'pos-rank pos-rosso';
           let pg = t.stats.v + t.stats.n + t.stats.l;
-          h += `<tr><td><span class="${c}">${i+1}</span></td><td class="col-team"><img src="${logoMap[t.nome]}" class="team-logo-mini" onerror="this.style.display='none'"> ${t.nome}</td><td>${pg}</td><td class="col-pts"><b>${t.stats.p}</b></td><td>${t.stats.gf}</td><td>${t.stats.gs}</td></tr>`;
+          h += `<tr><td><span class="${c}">${pos}</span></td><td class="col-team"><img src="${logoMap[t.nome]}" class="team-logo-mini" onerror="this.style.display='none'"> ${t.nome}</td><td>${pg}</td><td class="col-pts"><b>${t.stats.p}</b></td><td>${t.stats.gf}</td><td>${t.stats.gs}</td></tr>`;
         });
         h += `</tbody></table></div></div>`;
-        gironeIdx++;
       }
       document.getElementById('areaClassifiche').innerHTML = h;
     }
