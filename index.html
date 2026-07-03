@@ -349,7 +349,7 @@
     // CONFIGURAZIONE BACKEND
     // Sostituisci con l'URL della tua Web App Apps Script (Distribuisci > Nuova distribuzione > Web App)
     // ============================================================
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbyGyb4FytGLDgwfUsOuVrVyujUtLl3ZG5J5lEoGsqj9CdKpHaP5Ps8pduz_VTSvxKlNBw/exec";
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbyqnm9t5Y3K2iYWpHHR__HSTtfVC6GCUeOiZtn6hjeaH7UnYxaYX--36dIHon-KnE7F5w/exec";
 
     let appData = { prog: [], ris: [], sq: [], gio: [], spo: [] };
     let marcatoriPartita = [];
@@ -591,13 +591,18 @@
             let squadre = r[0].split(" vs ");
             let nomeA = squadre[0] ? squadre[0].trim() : '?';
             let nomeB = squadre[1] ? squadre[1].trim() : '?';
-            let risStr = String(r[1] || '-');
-            let isShootout = risStr.includes('S');
-            let shootoutWinner = isShootout ? (risStr.includes('SA') ? nomeA : nomeB) : null;
-            let pulito = risStr.replace('SA','').replace('SB','');
-            let gol = pulito.split('|'); // separatore "|" evita che Sheets converta in data o orario
-            let scoreDisplay = `${(gol[0]||'-').trim()} - ${(gol[1]||'-').trim()}`;
+            // Nuova struttura: r[1]=golA, r[2]=golB, r[3]=shootout("A"/"B"/"")
+            let golA = r[1] !== undefined && r[1] !== "" ? r[1] : null;
+            let golB = r[2] !== undefined && r[2] !== "" ? r[2] : null;
+            let shootout = r[3] || "";
+            let isShootout = shootout === "A" || shootout === "B";
+            let shootoutWinner = isShootout ? (shootout === "A" ? nomeA : nomeB) : null;
+            let hasScore = golA !== null && golB !== null;
+            let scoreDisplay = hasScore ? `${golA} - ${golB}` : '- - -';
             if(isShootout) scoreDisplay += ` <small style="font-size:0.6rem;color:#fbbf24">(SO)</small>`;
+            // Marcatori ora in r[4], MVP in r[5], Presidenti in r[6]
+            let marcatori = r[4] || "";
+            let mvp = r[5] || "";
             hRis += `<div class="match-card is-result">
               <div class="match-card-header">
                 <span class="match-time"><i class="fas fa-flag-checkered"></i> Finale</span>
@@ -608,7 +613,7 @@
                 <div class="match-center"><span class="match-score">${scoreDisplay}</span>${isShootout ? `<span style="font-size:0.6rem;color:#fbbf24;display:block;text-align:center">vince ${shootoutWinner}</span>` : ''}</div>
                 <div class="match-team"><img src="${logoFor(nomeB)}" class="match-team-logo" onerror="this.src='https://via.placeholder.com/60/0b1264/c5a059?text=?'"><span class="match-team-name">${nomeB}</span></div>
               </div>
-              ${(r[2] || r[3]) ? `<div class="match-extra">${r[2] ? `<span><i class="fas fa-futbol" style="color:var(--gold)"></i> ${r[2]}</span>` : ''}${r[3] ? `<span><i class="fas fa-star" style="color:var(--gold)"></i> MVP: ${r[3]}</span>` : ''}</div>` : ''}
+              ${(marcatori || mvp) ? `<div class="match-extra">${marcatori ? `<span><i class="fas fa-futbol" style="color:var(--gold)"></i> ${marcatori}</span>` : ''}${mvp ? `<span><i class="fas fa-star" style="color:var(--gold)"></i> MVP: ${mvp}</span>` : ''}</div>` : ''}
             </div>`;
           }
         });
@@ -621,7 +626,9 @@
 
     function renderTabellone() {
       let resMap = {};
-      if(appData.ris) appData.ris.forEach(r => { if(r[0]) resMap[r[0]] = r[1]; });
+      if(appData.ris) appData.ris.forEach(r => {
+        if(r[0]) resMap[r[0]] = { golA: r[1], golB: r[2], shootout: r[3] || "" };
+      });
 
       let rounds = { "Semi Playoff": [], "Finale Playoff": [], "Semi": [], "Finale": [] };
       if(appData.prog) appData.prog.forEach((r, i) => { if(i > 0 && r[3] && rounds[r[3]] !== undefined) rounds[r[3]].push({ sqA: r[1], sqB: r[2], time: r[0] }); });
@@ -629,10 +636,8 @@
       function getScore(m) {
         if(!m) return [null, null];
         let res = resMap[m.sqA + " vs " + m.sqB];
-        if(!res) return [null, null];
-        let pulito = String(res).replace('SA','').replace('SB','');
-        let parts = pulito.split('|');
-        return [parts[0] ? parts[0].trim() : null, parts[1] ? parts[1].trim() : null];
+        if(!res || res.golA === undefined || res.golA === "") return [null, null];
+        return [String(res.golA), String(res.golB)];
       }
 
       function matchBox(m, extraClass) {
@@ -708,24 +713,17 @@
       let stats = {}; let logoMap = {};
       if(appData.sq) appData.sq.forEach((s,i) => { if(i>0) logoMap[s[0]] = s[1]; });
       if(appData.ris) appData.ris.forEach(r => {
-        let parti = r[0].split(" vs ");
-        let risStr = String(r[1] || "");
-        // Detecta shootout: formato "1|1SA" o "1:1SB"
-        let isShootout = risStr.includes('S');
-        let shootoutWinner = null;
-        if(isShootout) {
-          shootoutWinner = risStr.includes('SA') ? 'A' : 'B';
-          risStr = risStr.replace('SA','').replace('SB','');
-        }
-        let gol = risStr.split("|");
-        if(parti.length==2 && gol.length==2){
-          let s1=parti[0].trim(), s2=parti[1].trim(), g1=parseInt(gol[0]), g2=parseInt(gol[1]);
-          if(isNaN(g1)||isNaN(g2)) return;
-          if(!stats[s1]) stats[s1]={p:0,v:0,n:0,l:0,gf:0,gs:0}; if(!stats[s2]) stats[s2]={p:0,v:0,n:0,l:0,gf:0,gs:0};
+        let parti = r[0] ? r[0].split(" vs ") : [];
+        let g1 = parseInt(r[1]), g2 = parseInt(r[2]);
+        let shootout = r[3] || "";
+        let isShootout = shootout === "A" || shootout === "B";
+        if(parti.length==2 && !isNaN(g1) && !isNaN(g2)){
+          let s1=parti[0].trim(), s2=parti[1].trim();
+          if(!stats[s1]) stats[s1]={p:0,v:0,n:0,l:0,gf:0,gs:0};
+          if(!stats[s2]) stats[s2]={p:0,v:0,n:0,l:0,gf:0,gs:0};
           stats[s1].gf+=g1; stats[s1].gs+=g2; stats[s2].gf+=g2; stats[s2].gs+=g1;
           if(isShootout) {
-            // Shootout: vincitore 2pt, perdente 1pt
-            if(shootoutWinner==='A'){ stats[s1].p+=2; stats[s1].v++; stats[s2].p+=1; stats[s2].l++; }
+            if(shootout==='A'){ stats[s1].p+=2; stats[s1].v++; stats[s2].p+=1; stats[s2].l++; }
             else { stats[s2].p+=2; stats[s2].v++; stats[s1].p+=1; stats[s1].l++; }
           } else if(g1>g2){ stats[s1].p+=3; stats[s1].v++; stats[s2].l++; }
           else if(g2>g1){ stats[s2].p+=3; stats[s2].v++; stats[s1].l++; }
@@ -779,9 +777,9 @@
       let mC = {}; let mvpC = {}; let presC = {};
       if(appData.gio) appData.gio.forEach((g,i) => { if(i>0){ let o = {val:0, games:new Set(), squadra:g[1], foto:g[2]||""}; if(g[3]==="Presidente") presC[g[0]]=o; else if(g[3]==="Giocatore") { mC[g[0]]=o; mvpC[g[0]]={...o, games: new Set()}; } } });
       if(appData.ris) appData.ris.forEach((r, idx) => {
-        if(r[2]) r[2].split(", ").forEach(n => { if(mC[n.trim()]) { mC[n.trim()].val++; mC[n.trim()].games.add(idx); } });
-        if(r[3] && mvpC[r[3].trim()]) { mvpC[r[3].trim()].val++; mvpC[r[3].trim()].games.add(idx); }
-        if(r[4]) r[4].split(", ").forEach(n => { if(presC[n.trim()]) { presC[n.trim()].val++; presC[n.trim()].games.add(idx); } });
+        if(r[4]) r[4].split(", ").forEach(n => { if(mC[n.trim()]) { mC[n.trim()].val++; mC[n.trim()].games.add(idx); } });
+        if(r[5] && mvpC[r[5].trim()]) { mvpC[r[5].trim()].val++; mvpC[r[5].trim()].games.add(idx); }
+        if(r[6]) r[6].split(", ").forEach(n => { if(presC[n.trim()]) { presC[n.trim()].val++; presC[n.trim()].games.add(idx); } });
       });
       const gen = (map, icon) => Object.keys(map).sort((a,b)=>map[b].val - map[a].val).map(n => `<div class="player-row"><img src="${map[n].foto}" class="player-photo" onerror="this.src='https://via.placeholder.com/150'"><div class="player-info"><p class="player-name">${n}</p><p class="player-team" style="font-size:0.7rem; color:var(--gold); margin-top:-5px;">${map[n].squadra}</p></div><div class="player-score">${map[n].val} ${icon}<br><small style="font-size:0.6rem">in ${map[n].games.size} gare</small></div></div>`).join('');
       document.getElementById('areaMarcatori').innerHTML = gen(mC, '⚽');
@@ -880,15 +878,18 @@
       if(!sel.value) return alert("Scegli una partita!");
       let gA = document.getElementById('goalA').value;
       let gB = document.getElementById('goalB').value;
-      // Costruiamo il campo risultato: "2:1" per vittoria normale, "1|1SA" o "1:1SB" per shootout
-      // Usiamo ":" invece di "-" perché Sheets interpreta "2-1" come data (2 gennaio)
-      let risultato = gA + "|" + gB;
-      if(parseInt(gA) === parseInt(gB)) {
+      // Salviamo gol A e gol B in colonne separate (r[1] e r[2])
+      // così Sheets non può mai interpretarli come date o orari — sono numeri puri
+      let golA = parseInt(gA);
+      let golB = parseInt(gB);
+      let shootout = "";
+      if(golA === golB) {
         let winner = document.querySelector('input[name="shootoutWinner"]:checked');
         if(!winner) return alert("Gol uguali: seleziona chi vince gli shootout!");
-        risultato = gA + "|" + gB + "S" + winner.value; // es. "1|1SA" = shootout vince A
+        shootout = winner.value; // "A" o "B"
       }
-      let d = [sel.options[sel.selectedIndex].text, risultato, marcatoriPartita.join(", "), document.getElementById('selectMVP').value, presidentiPartita.join(", ")];
+      // Struttura: [match, golA, golB, shootout, marcatori, mvp, presidenti]
+      let d = [sel.options[sel.selectedIndex].text, golA, golB, shootout, marcatoriPartita.join(", "), document.getElementById('selectMVP').value, presidentiPartita.join(", ")];
       let res = await apiPost({ action: "inserisciDati", sheetName: "Risultati", dati: d, editIndex: id, token: adminToken });
       if(res.ok) { alert("Risultato salvato!"); document.getElementById('edit_row_Risultati').value=""; resetMarcatori(); caricaDatiPubblici(); }
       else alert("Errore: " + (res.error || "operazione non riuscita"));
