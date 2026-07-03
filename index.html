@@ -296,8 +296,21 @@
         <input type="hidden" id="edit_row_Risultati">
         <select id="selectPartitaProgrammata" class="form-select" onchange="resetMarcatori()"></select>
         <div class="d-flex mb-2">
-          <input type="number" id="goalA" class="form-control mx-1" value="0">
-          <input type="number" id="goalB" class="form-control mx-1" value="0">
+          <input type="number" id="goalA" class="form-control mx-1" value="0" oninput="aggiornaShootout()">
+          <input type="number" id="goalB" class="form-control mx-1" value="0" oninput="aggiornaShootout()">
+        </div>
+        <div id="shootoutBlock" style="display:none; background:rgba(197,160,89,0.1); border:1px solid var(--gold); border-radius:10px; padding:10px; margin-bottom:12px;">
+          <p style="font-size:0.8rem; margin-bottom:8px; color:var(--gold); font-weight:700;">⚡ Shootout — chi vince?</p>
+          <div class="d-flex gap-2">
+            <div id="shootoutLabelA" style="flex:1; text-align:center;">
+              <input type="radio" name="shootoutWinner" id="shootoutA" value="A" style="background:white!important; width:auto; margin-bottom:0!important;">
+              <label for="shootoutA" id="labelShootoutA" style="color:white; font-size:0.8rem; cursor:pointer; margin-left:4px;">Squadra A</label>
+            </div>
+            <div id="shootoutLabelB" style="flex:1; text-align:center;">
+              <input type="radio" name="shootoutWinner" id="shootoutB" value="B" style="background:white!important; width:auto; margin-bottom:0!important;">
+              <label for="shootoutB" id="labelShootoutB" style="color:white; font-size:0.8rem; cursor:pointer; margin-left:4px;">Squadra B</label>
+            </div>
+          </div>
         </div>
         <select id="selectMarcatore" class="form-select"></select>
         <button class="btn btn-outline-warning w-100 mb-2" onclick="aggiungiMarcatore('G')">Goal +</button>
@@ -336,7 +349,7 @@
     // CONFIGURAZIONE BACKEND
     // Sostituisci con l'URL della tua Web App Apps Script (Distribuisci > Nuova distribuzione > Web App)
     // ============================================================
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxqaHTKvhLIBCiGFHDAVxnqavkhrD2WAqlYdddqWihA-_VKRqtJS6sZgzitPmZr61hAnw/exec";
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxmNRqs1q_cg753Ut9EYjuvRQ-KsCJAx79kaCCSZ4hNvnNNTU-SPFyTHAd8lsS24yf3_A/exec";
 
     let appData = { prog: [], ris: [], sq: [], gio: [], spo: [] };
     let marcatoriPartita = [];
@@ -578,15 +591,21 @@
             let squadre = r[0].split(" vs ");
             let nomeA = squadre[0] ? squadre[0].trim() : '?';
             let nomeB = squadre[1] ? squadre[1].trim() : '?';
-            let gol = (r[1] || '-').split('-');
+            let risStr = String(r[1] || '-');
+            let isShootout = risStr.includes('S');
+            let shootoutWinner = isShootout ? (risStr.includes('SA') ? nomeA : nomeB) : null;
+            let pulito = risStr.replace('SA','').replace('SB','');
+            let gol = pulito.split('-');
+            let scoreDisplay = `${(gol[0]||'-').trim()} - ${(gol[1]||'-').trim()}`;
+            if(isShootout) scoreDisplay += ` <small style="font-size:0.6rem;color:#fbbf24">(SO)</small>`;
             hRis += `<div class="match-card is-result">
               <div class="match-card-header">
                 <span class="match-time"><i class="fas fa-flag-checkered"></i> Finale</span>
-                <span class="match-badge result">Disputata</span>
+                <span class="match-badge result">${isShootout ? '⚡ Shootout' : 'Disputata'}</span>
               </div>
               <div class="match-teams">
                 <div class="match-team"><img src="${logoFor(nomeA)}" class="match-team-logo" onerror="this.src='https://via.placeholder.com/60/0b1264/c5a059?text=?'"><span class="match-team-name">${nomeA}</span></div>
-                <div class="match-center"><span class="match-score">${(gol[0]||'-').trim()} - ${(gol[1]||'-').trim()}</span></div>
+                <div class="match-center"><span class="match-score">${scoreDisplay}</span>${isShootout ? `<span style="font-size:0.6rem;color:#fbbf24;display:block;text-align:center">vince ${shootoutWinner}</span>` : ''}</div>
                 <div class="match-team"><img src="${logoFor(nomeB)}" class="match-team-logo" onerror="this.src='https://via.placeholder.com/60/0b1264/c5a059?text=?'"><span class="match-team-name">${nomeB}</span></div>
               </div>
               ${(r[2] || r[3]) ? `<div class="match-extra">${r[2] ? `<span><i class="fas fa-futbol" style="color:var(--gold)"></i> ${r[2]}</span>` : ''}${r[3] ? `<span><i class="fas fa-star" style="color:var(--gold)"></i> MVP: ${r[3]}</span>` : ''}</div>` : ''}
@@ -688,12 +707,28 @@
       let stats = {}; let logoMap = {};
       if(appData.sq) appData.sq.forEach((s,i) => { if(i>0) logoMap[s[0]] = s[1]; });
       if(appData.ris) appData.ris.forEach(r => {
-        let parti = r[0].split(" vs "); let gol = r[1].split("-");
+        let parti = r[0].split(" vs ");
+        let risStr = String(r[1] || "");
+        // Detecta shootout: formato "1-1SA" o "1-1SB"
+        let isShootout = risStr.includes('S');
+        let shootoutWinner = null;
+        if(isShootout) {
+          shootoutWinner = risStr.includes('SA') ? 'A' : 'B';
+          risStr = risStr.replace('SA','').replace('SB','');
+        }
+        let gol = risStr.split("-");
         if(parti.length==2 && gol.length==2){
           let s1=parti[0].trim(), s2=parti[1].trim(), g1=parseInt(gol[0]), g2=parseInt(gol[1]);
+          if(isNaN(g1)||isNaN(g2)) return;
           if(!stats[s1]) stats[s1]={p:0,v:0,n:0,l:0,gf:0,gs:0}; if(!stats[s2]) stats[s2]={p:0,v:0,n:0,l:0,gf:0,gs:0};
           stats[s1].gf+=g1; stats[s1].gs+=g2; stats[s2].gf+=g2; stats[s2].gs+=g1;
-          if(g1>g2){ stats[s1].p+=3; stats[s1].v++; stats[s2].l++; } else if(g2>g1){ stats[s2].p+=3; stats[s2].v++; stats[s1].l++; } else { stats[s1].p++; stats[s2].p++; stats[s1].n++; stats[s2].n++; }
+          if(isShootout) {
+            // Shootout: vincitore 2pt, perdente 1pt
+            if(shootoutWinner==='A'){ stats[s1].p+=2; stats[s1].v++; stats[s2].p+=1; stats[s2].l++; }
+            else { stats[s2].p+=2; stats[s2].v++; stats[s1].p+=1; stats[s1].l++; }
+          } else if(g1>g2){ stats[s1].p+=3; stats[s1].v++; stats[s2].l++; }
+          else if(g2>g1){ stats[s2].p+=3; stats[s2].v++; stats[s1].l++; }
+          else { stats[s1].p++; stats[s2].p++; stats[s1].n++; stats[s2].n++; }
         }
       });
       let gironiMap = {}; 
@@ -814,13 +849,44 @@
       if(res.ok) { alert("OK"); await caricaDatiPubblici(); aggiornaTutto(); document.getElementById('edit_row_Programmazione').value=""; }
       else alert("Errore: " + (res.error || "operazione non riuscita"));
     }
+    function aggiornaShootout() {
+      let gA = parseInt(document.getElementById('goalA').value) || 0;
+      let gB = parseInt(document.getElementById('goalB').value) || 0;
+      let block = document.getElementById('shootoutBlock');
+      block.style.display = (gA === gB) ? 'block' : 'none';
+      // Aggiorna le label col nome reale delle squadre dalla partita selezionata
+      let sel = document.getElementById('selectPartitaProgrammata');
+      if(sel.value && sel.selectedIndex > 0) {
+        let testo = sel.options[sel.selectedIndex].text; // es. "FC Roma vs Napoli United"
+        let parti = testo.split(' vs ');
+        if(parti.length === 2) {
+          document.getElementById('labelShootoutA').textContent = parti[0].trim();
+          document.getElementById('labelShootoutB').textContent = parti[1].trim();
+        }
+      }
+    }
     function aggiungiMarcatore(tipo) { let m = tipo === 'G' ? document.getElementById('selectMarcatore').value : document.getElementById('selectPresidente').value; if(m) { if(tipo==='G') marcatoriPartita.push(m); else presidentiPartita.push(m); document.getElementById('marcatoriList').innerHTML += `<span class="marcatore-tag">${m}</span>`; } }
-    function resetMarcatori() { marcatoriPartita = []; presidentiPartita = []; document.getElementById('marcatoriList').innerHTML = ""; }
+    function resetMarcatori() {
+      marcatoriPartita = []; presidentiPartita = [];
+      document.getElementById('marcatoriList').innerHTML = "";
+      document.getElementById('shootoutBlock').style.display = 'none';
+      document.querySelectorAll('input[name="shootoutWinner"]').forEach(r => r.checked = false);
+      aggiornaShootout();
+    }
     async function salvaRisultatoFinale() {
       let id = document.getElementById('edit_row_Risultati').value;
       let sel = document.getElementById('selectPartitaProgrammata');
       if(!sel.value) return alert("Scegli una partita!");
-      let d = [sel.options[sel.selectedIndex].text, document.getElementById('goalA').value + "-" + document.getElementById('goalB').value, marcatoriPartita.join(", "), document.getElementById('selectMVP').value, presidentiPartita.join(", ")];
+      let gA = document.getElementById('goalA').value;
+      let gB = document.getElementById('goalB').value;
+      // Costruiamo il campo risultato: "2-1" per vittoria normale, "1-1SA" o "1-1SB" per shootout
+      let risultato = gA + "-" + gB;
+      if(parseInt(gA) === parseInt(gB)) {
+        let winner = document.querySelector('input[name="shootoutWinner"]:checked');
+        if(!winner) return alert("Gol uguali: seleziona chi vince gli shootout!");
+        risultato = gA + "-" + gB + "S" + winner.value; // es. "1-1SA" = shootout vince A
+      }
+      let d = [sel.options[sel.selectedIndex].text, risultato, marcatoriPartita.join(", "), document.getElementById('selectMVP').value, presidentiPartita.join(", ")];
       let res = await apiPost({ action: "inserisciDati", sheetName: "Risultati", dati: d, editIndex: id, token: adminToken });
       if(res.ok) { alert("Risultato salvato!"); document.getElementById('edit_row_Risultati').value=""; resetMarcatori(); caricaDatiPubblici(); }
       else alert("Errore: " + (res.error || "operazione non riuscita"));
