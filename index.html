@@ -349,7 +349,7 @@
     // CONFIGURAZIONE BACKEND
     // Sostituisci con l'URL della tua Web App Apps Script (Distribuisci > Nuova distribuzione > Web App)
     // ============================================================
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzCcWbQjR7HnIasbhmxRT5xx2YiLB0php3Hqu_dzQGqVDS2Sm_Mvxcm8KqJemsgrTqmaQ/exec";
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbydWI3zwHESrnEesRxLyB33yYav-nxcOM6Gs5knehE7Wymq93gBsep4IZrJDr78H5yv/exec";
 
     let appData = { prog: [], ris: [], sq: [], gio: [], spo: [] };
     let marcatoriPartita = [];
@@ -734,7 +734,12 @@
       if(appData.sq) appData.sq.forEach((s,i) => { if(i>0){ if(!gironiMap[s[2]]) gironiMap[s[2]]=[]; gironiMap[s[2]].push({nome: s[0], stats: stats[s[0]] || {p:0,v:0,n:0,l:0,gf:0,gs:0}}); } });
       let h = "";
       for(let g in gironiMap){
-        gironiMap[g].sort((a,b) => b.stats.p - a.stats.p);
+        gironiMap[g].sort((a,b) => {
+          if(b.stats.p !== a.stats.p) return b.stats.p - a.stats.p;
+          let drA = a.stats.gf - a.stats.gs, drB = b.stats.gf - b.stats.gs;
+          if(drB !== drA) return drB - drA;
+          return b.stats.gf - a.stats.gf;
+        });
         h += `<div class="table-girone"><div class="girone-header"><i class="fas fa-shield-halved"></i><h4>${g}</h4></div><div class="girone-body"><table class='fixed-table table table-borderless table-sm small text-white'><thead><tr><th class="col-rank">#</th><th class="col-team">Squadra</th><th class="col-stats" title="Partite Giocate">PG</th><th class="col-pts" title="Punti">PT</th><th class="col-stats" title="Gol Fatti">GF</th><th class="col-stats" title="Gol Subiti">GS</th></tr></thead><tbody>`;
         gironiMap[g].forEach((t, i) => {
           let pos = i + 1;
