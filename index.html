@@ -349,7 +349,7 @@
     // CONFIGURAZIONE BACKEND
     // Sostituisci con l'URL della tua Web App Apps Script (Distribuisci > Nuova distribuzione > Web App)
     // ============================================================
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbydWI3zwHESrnEesRxLyB33yYav-nxcOM6Gs5knehE7Wymq93gBsep4IZrJDr78H5yv/exec";
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzrIAn1u_0FCRBQQLAsn6DLt2rgypXn5vu6cQ-DYZksTQpctEROUEvGeQn1pgLaFW4nGg/exec";
 
     let appData = { prog: [], ris: [], sq: [], gio: [], spo: [] };
     let marcatoriPartita = [];
@@ -780,12 +780,45 @@
 
     function renderMarcatori() {
       let mC = {}; let mvpC = {}; let presC = {};
-      if(appData.gio) appData.gio.forEach((g,i) => { if(i>0){ let o = {val:0, games:new Set(), squadra:g[1], foto:g[2]||""}; if(g[3]==="Presidente") presC[g[0]]=o; else if(g[3]==="Giocatore") { mC[g[0]]=o; mvpC[g[0]]={...o, games: new Set()}; } } });
-      if(appData.ris) appData.ris.forEach((r, idx) => {
-        if(r[4]) r[4].split(", ").forEach(n => { if(mC[n.trim()]) { mC[n.trim()].val++; mC[n.trim()].games.add(idx); } });
-        if(r[5] && mvpC[r[5].trim()]) { mvpC[r[5].trim()].val++; mvpC[r[5].trim()].games.add(idx); }
-        if(r[6]) r[6].split(", ").forEach(n => { if(presC[n.trim()]) { presC[n.trim()].val++; presC[n.trim()].games.add(idx); } });
+      // squadraGiocatori: mappa nome_squadra → array di nomi giocatori/presidenti
+      let squadraGiocatori = {}; let squadraPresidenti = {};
+      if(appData.gio) appData.gio.forEach((g,i) => {
+        if(i>0){
+          let o = {val:0, games:new Set(), squadra:g[1], foto:g[2]||""};
+          if(g[3]==="Presidente") {
+            presC[g[0]] = o;
+            if(!squadraPresidenti[g[1]]) squadraPresidenti[g[1]] = [];
+            squadraPresidenti[g[1]].push(g[0]);
+          } else if(g[3]==="Giocatore") {
+            mC[g[0]] = o;
+            mvpC[g[0]] = {...o, games: new Set()};
+            if(!squadraGiocatori[g[1]]) squadraGiocatori[g[1]] = [];
+            squadraGiocatori[g[1]].push(g[0]);
+          }
+        }
       });
+
+      if(appData.ris) appData.ris.forEach((r, idx) => {
+        // Estrai le due squadre che hanno giocato
+        let parti = r[0] ? r[0].split(" vs ") : [];
+        let sqA = parti[0] ? parti[0].trim() : null;
+        let sqB = parti[1] ? parti[1].trim() : null;
+
+        // Per ogni giocatore di entrambe le squadre, incrementa il contatore gare giocate
+        [sqA, sqB].forEach(sq => {
+          if(!sq) return;
+          (squadraGiocatori[sq] || []).forEach(nome => { if(mC[nome]) { mC[nome].games.add(idx); mvpC[nome].games.add(idx); } });
+          (squadraPresidenti[sq] || []).forEach(nome => { if(presC[nome]) presC[nome].games.add(idx); });
+        });
+
+        // Incrementa i gol per chi ha effettivamente segnato (r[4] = marcatori)
+        if(r[4]) r[4].split(", ").forEach(n => { if(mC[n.trim()]) mC[n.trim()].val++; });
+        // MVP (r[5])
+        if(r[5] && mvpC[r[5].trim()]) mvpC[r[5].trim()].val++;
+        // Gol presidenti (r[6])
+        if(r[6]) r[6].split(", ").forEach(n => { if(presC[n.trim()]) presC[n.trim()].val++; });
+      });
+
       const gen = (map, icon) => Object.keys(map).sort((a,b)=>map[b].val - map[a].val).map(n => `<div class="player-row"><img src="${map[n].foto}" class="player-photo" onerror="this.src='https://via.placeholder.com/150'"><div class="player-info"><p class="player-name">${n}</p><p class="player-team" style="font-size:0.7rem; color:var(--gold); margin-top:-5px;">${map[n].squadra}</p></div><div class="player-score">${map[n].val} ${icon}<br><small style="font-size:0.6rem">in ${map[n].games.size} gare</small></div></div>`).join('');
       document.getElementById('areaMarcatori').innerHTML = gen(mC, '⚽');
       document.getElementById('areaMVP').innerHTML = gen(mvpC, '🌟');
