@@ -349,7 +349,7 @@
     // CONFIGURAZIONE BACKEND
     // Sostituisci con l'URL della tua Web App Apps Script (Distribuisci > Nuova distribuzione > Web App)
     // ============================================================
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzrIAn1u_0FCRBQQLAsn6DLt2rgypXn5vu6cQ-DYZksTQpctEROUEvGeQn1pgLaFW4nGg/exec";
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycby2fovi4xWCH38IGNEi4PTsG1NlK3zT84uIfNw-AMCHV_Rgt_Sr6XSI3o8wtkYY49TiXQ/exec";
 
     let appData = { prog: [], ris: [], sq: [], gio: [], spo: [] };
     let marcatoriPartita = [];
@@ -588,7 +588,8 @@
         let risCopia = [...appData.ris].reverse();
         risCopia.forEach(r => { 
           if(r[0] && !r[0].toLowerCase().includes("match")) {
-            let squadre = r[0].split(" vs ");
+            let matchRaw = r[0] ? r[0].split('##')[0] : '';
+            let squadre = matchRaw.split(" vs ");
             let nomeA = squadre[0] ? squadre[0].trim() : '?';
             let nomeB = squadre[1] ? squadre[1].trim() : '?';
             // Nuova struttura: r[1]=golA, r[2]=golB, r[3]=shootout("A"/"B"/"")
@@ -625,17 +626,29 @@
     }
 
     function renderTabellone() {
+      // resMap ora usa l'indice di riga come chiave (da r[0] = "SqA vs SqB##INDEX")
+      // così due partite con le stesse squadre hanno chiavi diverse e non si sovrascrivono
       let resMap = {};
       if(appData.ris) appData.ris.forEach(r => {
-        if(r[0]) resMap[r[0]] = { golA: r[1], golB: r[2], shootout: r[3] || "" };
+        if(r[0]) {
+          let parti = r[0].split('##');
+          let matchStr = parti[0]; // "SqA vs SqB"
+          let idx = parti[1] || null;
+          let entry = { golA: r[1], golB: r[2], shootout: r[3] || "", match: matchStr };
+          resMap[r[0]] = entry; // chiave completa con ##INDEX (univoca)
+          if(!resMap[matchStr]) resMap[matchStr] = entry; // compatibilità con risultati vecchi senza ##
+        }
       });
 
       let rounds = { "Semi Playoff": [], "Finale Playoff": [], "Semi": [], "Finale": [] };
-      if(appData.prog) appData.prog.forEach((r, i) => { if(i > 0 && r[3] && rounds[r[3]] !== undefined) rounds[r[3]].push({ sqA: r[1], sqB: r[2], time: r[0] }); });
+      if(appData.prog) appData.prog.forEach((r, i) => { if(i > 0 && r[3] && rounds[r[3]] !== undefined) rounds[r[3]].push({ sqA: r[1], sqB: r[2], time: r[0], progIdx: i }); });
 
       function getScore(m) {
         if(!m) return [null, null];
-        let res = resMap[m.sqA + " vs " + m.sqB];
+        // Cerca prima con chiave completa "SqA vs SqB##INDEX" poi fallback su solo testo squadre
+        let keyBase = m.sqA + " vs " + m.sqB;
+        let keyFull = m.progIdx ? keyBase + "##" + m.progIdx : null;
+        let res = (keyFull && resMap[keyFull]) || resMap[keyBase];
         if(!res || res.golA === undefined || res.golA === "") return [null, null];
         return [String(res.golA), String(res.golB)];
       }
@@ -713,7 +726,7 @@
       let stats = {}; let logoMap = {};
       if(appData.sq) appData.sq.forEach((s,i) => { if(i>0) logoMap[s[0]] = s[1]; });
       if(appData.ris) appData.ris.forEach(r => {
-        let parti = r[0] ? r[0].split(" vs ") : [];
+        let parti = r[0] ? r[0].split('##')[0].split(" vs ") : [];
         let g1 = parseInt(r[1]), g2 = parseInt(r[2]);
         let shootout = r[3] || "";
         let isShootout = shootout === "A" || shootout === "B";
@@ -800,7 +813,7 @@
 
       if(appData.ris) appData.ris.forEach((r, idx) => {
         // Estrai le due squadre che hanno giocato
-        let parti = r[0] ? r[0].split(" vs ") : [];
+        let parti = r[0] ? r[0].split('##')[0].split(" vs ") : [];
         let sqA = parti[0] ? parti[0].trim() : null;
         let sqB = parti[1] ? parti[1].trim() : null;
 
@@ -844,7 +857,15 @@
         popolaSelect('selectMVP', gList, "MVP");
 
         let el = document.getElementById('selectPartitaProgrammata');
-        if(el){ el.innerHTML = '<option value="">Scegli match...</option>'; data.partite.forEach(p => el.innerHTML += `<option value="${p.index}">${p.testo}</option>`); }
+        if(el){
+          el.innerHTML = '<option value="">Scegli match...</option>';
+          data.partite.forEach(p => {
+            // Recuperiamo la data dalla programmazione per distinguere doppioni (stesse squadre in date diverse)
+            let dataPartita = (appData.prog && appData.prog[p.index]) ? (appData.prog[p.index][0] || '') : '';
+            let label = dataPartita ? `${p.testo} — ${dataPartita}` : p.testo;
+            el.innerHTML += `<option value="${p.index}">${label}</option>`;
+          });
+        }
       } catch(err) {
         console.error("Errore aggiornaTutto:", err);
       }
@@ -891,11 +912,11 @@
       let gB = parseInt(document.getElementById('goalB').value) || 0;
       let block = document.getElementById('shootoutBlock');
       block.style.display = (gA === gB) ? 'block' : 'none';
-      // Aggiorna le label col nome reale delle squadre dalla partita selezionata
       let sel = document.getElementById('selectPartitaProgrammata');
       if(sel.value && sel.selectedIndex > 0) {
-        let testo = sel.options[sel.selectedIndex].text; // es. "FC Roma vs Napoli United"
-        let parti = testo.split(' vs ');
+        // Il testo ora può essere "FC Roma vs Napoli — 15 Aprile": prendiamo solo la parte prima di " — "
+        let testoBase = sel.options[sel.selectedIndex].text.split(' — ')[0];
+        let parti = testoBase.split(' vs ');
         if(parti.length === 2) {
           document.getElementById('labelShootoutA').textContent = parti[0].trim();
           document.getElementById('labelShootoutB').textContent = parti[1].trim();
@@ -916,18 +937,19 @@
       if(!sel.value) return alert("Scegli una partita!");
       let gA = document.getElementById('goalA').value;
       let gB = document.getElementById('goalB').value;
-      // Salviamo gol A e gol B in colonne separate (r[1] e r[2])
-      // così Sheets non può mai interpretarli come date o orari — sono numeri puri
       let golA = parseInt(gA);
       let golB = parseInt(gB);
       let shootout = "";
       if(golA === golB) {
         let winner = document.querySelector('input[name="shootoutWinner"]:checked');
         if(!winner) return alert("Gol uguali: seleziona chi vince gli shootout!");
-        shootout = winner.value; // "A" o "B"
+        shootout = winner.value;
       }
-      // Struttura: [match, golA, golB, shootout, marcatori, mvp, presidenti]
-      let d = [sel.options[sel.selectedIndex].text, golA, golB, shootout, marcatoriPartita.join(", "), document.getElementById('selectMVP').value, presidentiPartita.join(", ")];
+      // Salviamo il match come "SqA vs SqB##INDEX" — l'indice è la chiave univoca
+      // che distingue due partite con le stesse squadre (es. andata e ritorno)
+      let testoBase = sel.options[sel.selectedIndex].text.split(' — ')[0].trim();
+      let matchKey = testoBase + "##" + sel.value;
+      let d = [matchKey, golA, golB, shootout, marcatoriPartita.join(", "), document.getElementById('selectMVP').value, presidentiPartita.join(", ")];
       let res = await apiPost({ action: "inserisciDati", sheetName: "Risultati", dati: d, editIndex: id, token: adminToken });
       if(res.ok) { alert("Risultato salvato!"); document.getElementById('edit_row_Risultati').value=""; resetMarcatori(); caricaDatiPubblici(); }
       else alert("Errore: " + (res.error || "operazione non riuscita"));
