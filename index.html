@@ -349,7 +349,7 @@
     // CONFIGURAZIONE BACKEND
     // Sostituisci con l'URL della tua Web App Apps Script (Distribuisci > Nuova distribuzione > Web App)
     // ============================================================
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxR1bDo7OpfSQPTBIbaWWrbF3QoPi0yK5CgEcNJpKxqtaxYfRnXCLHYw0McpGxoc9ABWQ/exec";
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzu_4jLdlaXk35blPBkMZZb4dnD8mnNP0cJnDqDQhwIsgWWVSk_G2xx4FuF3CKw3OSV/exec";
 
     let appData = { prog: [], ris: [], sq: [], gio: [], spo: [] };
     let marcatoriPartita = [];
@@ -862,7 +862,10 @@
         if(r[6]) r[6].split(", ").forEach(n => { if(presC[n.trim()]) presC[n.trim()].val++; });
       });
 
-      const gen = (map, icon) => Object.keys(map).sort((a,b)=>map[b].val - map[a].val).map(n => `<div class="player-row"><img src="${map[n].foto}" class="player-photo" onerror="this.src='https://via.placeholder.com/150'"><div class="player-info"><p class="player-name">${n}</p><p class="player-team" style="font-size:0.7rem; color:var(--gold); margin-top:-5px;">${map[n].squadra}</p></div><div class="player-score">${map[n].val} ${icon}<br><small style="font-size:0.6rem">in ${map[n].games.size} gare</small></div></div>`).join('');
+      const gen = (map, icon) => Object.keys(map).sort((a,b) => {
+        if(map[b].val !== map[a].val) return map[b].val - map[a].val;
+        return map[a].games.size - map[b].games.size; // meno partite = più in alto a parità di gol
+      }).map(n => `<div class="player-row"><img src="${map[n].foto}" class="player-photo" onerror="this.src='https://via.placeholder.com/150'"><div class="player-info"><p class="player-name">${n}</p><p class="player-team" style="font-size:0.7rem; color:var(--gold); margin-top:-5px;">${map[n].squadra}</p></div><div class="player-score">${map[n].val} ${icon}<br><small style="font-size:0.6rem">in ${map[n].games.size} gare</small></div></div>`).join('');
       document.getElementById('areaMarcatori').innerHTML = gen(mC, '⚽');
       document.getElementById('areaMVP').innerHTML = gen(mvpC, '🌟');
       document.getElementById('areaPresidenti').innerHTML = gen(presC, '👔');
