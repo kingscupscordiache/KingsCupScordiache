@@ -349,7 +349,7 @@
     // CONFIGURAZIONE BACKEND
     // Sostituisci con l'URL della tua Web App Apps Script (Distribuisci > Nuova distribuzione > Web App)
     // ============================================================
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbw4VQUf22owZEtbDBBAJZGrPh0QNJL01VTKX3bL9W23dpOqkWDRf-u-T70JZSIDXDaDFg/exec";
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxJgBKUKkUH7OAuFzeQfexsw5l_4MCV8S0n-0h04fOWZV3djtey9NvrmoEEwlWrVxeU/exec";
 
     let appData = { prog: [], ris: [], sq: [], gio: [], spo: [] };
     let marcatoriPartita = [];
@@ -729,7 +729,19 @@
       let stats = {}; let logoMap = {};
       if(appData.sq) appData.sq.forEach((s,i) => { if(i>0) logoMap[s[0]] = s[1]; });
       if(appData.ris) appData.ris.forEach(r => {
-        let parti = r[0] ? r[0].split('##')[0].split(" vs ") : [];
+        // Estrai l'indice della partita dal campo match (formato "SqA vs SqB##INDEX")
+        // e controlla che il tipo sia "Girone" — playoff/semifinali/finali non entrano in classifica
+        let rawParts = r[0] ? r[0].split('##') : [];
+        let progIdx = rawParts[1] ? parseInt(rawParts[1]) : null;
+        if(progIdx !== null && appData.prog && appData.prog[progIdx]) {
+          let tipoMatch = appData.prog[progIdx][3] || "";
+          if(tipoMatch !== "Girone") return; // salta playoff, semi, finale, ecc.
+        } else if(progIdx !== null) {
+          return; // indice non trovato in programmazione, saltiamo per sicurezza
+        }
+        // Risultati senza ##INDEX (vecchio formato) li includiamo solo se le squadre
+        // sono nel girone (il check sui gironiMap li filtrerà naturalmente)
+        let parti = rawParts[0] ? rawParts[0].split(" vs ") : [];
         let g1 = parseInt(r[1]), g2 = parseInt(r[2]);
         let shootout = r[3] || "";
         let isShootout = shootout === "A" || shootout === "B";
