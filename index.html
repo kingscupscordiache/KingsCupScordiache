@@ -349,7 +349,7 @@
     // CONFIGURAZIONE BACKEND
     // Sostituisci con l'URL della tua Web App Apps Script (Distribuisci > Nuova distribuzione > Web App)
     // ============================================================
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxJgBKUKkUH7OAuFzeQfexsw5l_4MCV8S0n-0h04fOWZV3djtey9NvrmoEEwlWrVxeU/exec";
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxR1bDo7OpfSQPTBIbaWWrbF3QoPi0yK5CgEcNJpKxqtaxYfRnXCLHYw0McpGxoc9ABWQ/exec";
 
     let appData = { prog: [], ris: [], sq: [], gio: [], spo: [] };
     let marcatoriPartita = [];
@@ -728,20 +728,35 @@
     function renderClassifiche() {
       let stats = {}; let logoMap = {};
       if(appData.sq) appData.sq.forEach((s,i) => { if(i>0) logoMap[s[0]] = s[1]; });
-      if(appData.ris) appData.ris.forEach(r => {
-        // Estrai l'indice della partita dal campo match (formato "SqA vs SqB##INDEX")
-        // e controlla che il tipo sia "Girone" — playoff/semifinali/finali non entrano in classifica
-        let rawParts = r[0] ? r[0].split('##') : [];
-        let progIdx = rawParts[1] ? parseInt(rawParts[1]) : null;
-        if(progIdx !== null && appData.prog && appData.prog[progIdx]) {
-          let tipoMatch = appData.prog[progIdx][3] || "";
-          if(tipoMatch !== "Girone") return; // salta playoff, semi, finale, ecc.
-        } else if(progIdx !== null) {
-          return; // indice non trovato in programmazione, saltiamo per sicurezza
+      // Costruiamo una mappa di tutti i match NON di girone dalla programmazione,
+      // sia per indice che per testo squadre — così filtriamo correttamente qualsiasi
+      // risultato playoff/semi/finale indipendentemente dal formato in cui è stato salvato
+      let tipiPerIndice = {}; // indice → tipo (es. 3 → "Semi Playoff")
+      let tipiPerTesto = {};  // "SqA vs SqB" → tipo (può avere collisioni ma va bene per il filtro)
+      if(appData.prog) appData.prog.forEach((r, i) => {
+        if(i > 0 && r[1] && r[2] && r[3]) {
+          tipiPerIndice[i] = r[3];
+          tipiPerTesto[r[1].trim() + " vs " + r[2].trim()] = r[3];
         }
-        // Risultati senza ##INDEX (vecchio formato) li includiamo solo se le squadre
-        // sono nel girone (il check sui gironiMap li filtrerà naturalmente)
-        let parti = rawParts[0] ? rawParts[0].split(" vs ") : [];
+      });
+
+      if(appData.ris) appData.ris.forEach(r => {
+        let rawParts = r[0] ? r[0].split('##') : [];
+        let matchStr = rawParts[0] ? rawParts[0].trim() : '';
+        let progIdx = rawParts[1] ? parseInt(rawParts[1]) : null;
+
+        // Determina il tipo match: prima dall'indice (preciso), poi dal testo (fallback)
+        let tipoMatch = null;
+        if(progIdx !== null && tipiPerIndice[progIdx]) {
+          tipoMatch = tipiPerIndice[progIdx];
+        } else if(tipiPerTesto[matchStr]) {
+          tipoMatch = tipiPerTesto[matchStr];
+        }
+
+        // Se il tipo è noto e non è "Girone", escludi dalla classifica
+        if(tipoMatch && tipoMatch !== "Girone") return;
+
+        let parti = matchStr ? matchStr.split(" vs ") : [];
         let g1 = parseInt(r[1]), g2 = parseInt(r[2]);
         let shootout = r[3] || "";
         let isShootout = shootout === "A" || shootout === "B";
