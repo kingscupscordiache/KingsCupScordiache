@@ -349,7 +349,7 @@
     // CONFIGURAZIONE BACKEND
     // Sostituisci con l'URL della tua Web App Apps Script (Distribuisci > Nuova distribuzione > Web App)
     // ============================================================
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycby2fovi4xWCH38IGNEi4PTsG1NlK3zT84uIfNw-AMCHV_Rgt_Sr6XSI3o8wtkYY49TiXQ/exec";
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbw4VQUf22owZEtbDBBAJZGrPh0QNJL01VTKX3bL9W23dpOqkWDRf-u-T70JZSIDXDaDFg/exec";
 
     let appData = { prog: [], ris: [], sq: [], gio: [], spo: [] };
     let marcatoriPartita = [];
@@ -382,6 +382,9 @@
       document.getElementById('sponsorStrip').style.display = 'flex';
       aggiornaTutto();
       caricaDatiPubblici();
+      // Auto-refresh ogni 30 secondi: rileva modifiche fatte direttamente su Sheets
+      // (es. eliminazione risultati) senza che l'utente debba ricaricare la pagina
+      setInterval(() => { caricaDatiPubblici(); }, 30000);
     }
 
     // --- Login Admin ---
